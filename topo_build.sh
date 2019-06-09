@@ -93,17 +93,66 @@ for node in ${global_nodes}; do
 		# Node defined, now add interfaces
 		ifnum=1
 		while var_exists name=${node}_if${ifnum}_bridge ; do
-				echo "adding interface if$ifnum"
 				if=${node}_if${ifnum}_bridge
 				bridge=${!if}
 				nodeNrHigh=`expr ${nodeNr} / 256`
 				nodeNrLow=`expr ${nodeNr} % 256`
 				macaddr=${MacPrefix}`printf "%02x\n" ${nodeNrHigh}`:`printf "%02x\n" ${nodeNrLow}`:`printf "%02x\n" $ifnum`
-				echo "   Adding Interface $ifnum with MAC $macaddr, connected to ${bridge}"
+				echo "   ${node}: Adding Interface $ifnum with MAC $macaddr, connected to ${bridge}"
 				virsh attach-interface $node --model virtio \
 	  				--type bridge --source $bridge --mac $macaddr --persistent
 				#
 				ifnum=`expr $ifnum + 1`
 	    done
+	    # Interfaces added. Now adjust VM config
+	    # 
+	    # Hostname
+	    # /etc/hostname
+	    hostnamefile=/tmp/node-hostnamefile-$$
+		echo "$node" > $hostnamefile
+		#
+	    # /etc/network/interfaces
+	    iffile=/tmp/node-if-$$
+		echo "# The loopback network interface" > $iffile
+		echo "auto lo" >> $iffile
+		echo "iface lo inet loopback" >> $iffile
+		echo "#" >> $iffile
+		ifnum=1
+		ensnum=2
+		while var_exists name=${node}_if${ifnum}_bridge ; do
+			if=${node}_if${ifnum}_bridge
+			bridge=${!if}
+			echo "# Interface $ifnum, connected to bridge $bridge" >> $iffile
+			echo "auto ens${ensnum}" >> $iffile
+			echo "iface ens${ensnum} inet manual" >> $iffile
+			echo "  up ip link set \$IFACE up" >> $iffile
+			echo "  down ip link set \$IFACE down" >> $iffile
+			echo "iface ens${ensnum} inet6 manual" >> $iffile
+			echo "#" >> $iffile
+			ifnum=`expr $ifnum + 1`
+			ensnum=`expr $ensnum + 1`
+		done
+		#
+		# /etc/hosts
+		hostfile=/tmp/node-hostfile-$$
+		echo "127.0.0.1 $node localhost.localdomain localhost" > $hostfile
+		echo "::1             localhost6.localdomain6 localhost6 ip6-localhost ip6-loopback" >> $hostfile
+		echo "fe00::0		ip6-localnet" >> $hostfile
+		echo "ff00::0		ip6-mcastprefix" >> $hostfile
+		echo "ff02::1		ip6-allnodes" >> $hostfile
+		echo "ff02::2		ip6-allrouters" >> $hostfile
+		#
+		# Files prepared, now add them to new VM disks
+		echo "   ${node}: Updating VM disk with configuration"
+		sudo /usr/bin/guestfish \
+		    --rw -a ${VM_storage_dir}/${node}_disk.qcow2 -i \
+    		rm-rf /etc/udev/rules.d/70-persistent-net.rules : \
+    		upload $iffile /etc/network/interfaces : \
+    		upload $hostnamefile /etc/hostname : \
+    		upload $hostfile /etc/hosts
+
+		rm $iffile
+		rm $hostnamefile
+		rm $hostfile
 	fi
 done
