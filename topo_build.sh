@@ -70,19 +70,19 @@ for node in ${global_nodes}; do
     # Creating bridges as needed
     ifnum=1
     while var_exists name=${node}_if${ifnum}_bridge ; do
-        echo "$node, interface if$ifnum"
         if=${node}_if${ifnum}_bridge
         bridge=${!if}
-        echo "   Creating Bridge ${bridge}"
-        sudo brctl addbr ${bridge} 2> /dev/null
+        BridgeFound=`grep "${bridge}:" /proc/net/dev`
+        if ! [ -n "${BridgeFound}" ] ; then
+            echo "   $node: interface if$ifnum - Creating Bridge ${bridge}"
+            sudo brctl addbr ${bridge} 2> /dev/null
+        fi
         #
         ifnum=`expr $ifnum + 1`
     done
     #
 
-    if [ "`virsh list --all | grep \ $node\ `" != "" ]; then
-        echo "Node $node already exists - skipped"
-    else
+    if [ "`virsh list --all | grep \ $node\ `" = "" ]; then
         sudo sh -c "pv -B 500M ${VM_Template_disk} > ${VM_storage_dir}/${node}_disk.qcow2"
         node_xml="/tmp/node_$node.xml"
         cp ${Script_Dir}/node-template.xml $node_xml
