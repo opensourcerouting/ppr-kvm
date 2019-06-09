@@ -41,34 +41,34 @@ eval $(parse_yaml ${YAML_Configfile})
 # Delete nodes
 #
 for node in ${global_nodes}; do
-	echo "Deleting node $node"
+    echo "Deleting node $node"
     #
     # Delete node if it exists
-	if [ "`virsh list --all | grep \ $node\ `" != "" ]; then
-		VM_disk=`virsh dumpxml ${node} | grep "source file" | grep -o "'.*'" | sed "s/'//g"`
-		virsh destroy $node 2> /dev/null
-		while [ "`virsh list --state-shutoff --all | grep \ $node`" == "" ]
-		do
-			sleep 1
-			echo "waiting for shutdown"
-		done
-		virsh undefine  --remove-all-storage $node 2> /dev/null
-		sleep 2
-		sudo rm -f -v $VM_disk
-	fi
+    if [ "`virsh list --all | grep \ $node\ `" != "" ]; then
+        VM_disk=`virsh dumpxml ${node} | grep "source file" | grep -o "'.*'" | sed "s/'//g"`
+        virsh destroy $node 2> /dev/null
+        while [ "`virsh list --state-shutoff --all | grep \ $node`" == "" ]
+        do
+            sleep 1
+            echo "waiting for shutdown"
+        done
+        virsh undefine  --remove-all-storage $node 2> /dev/null
+        sleep 2
+        sudo rm -f -v $VM_disk
+    fi
 done
 #
 # All nodes deleted, now delete bridges
 #
 for node in ${global_nodes}; do
-	ifnum=1
-	while var_exists name=${node}_if${ifnum}_bridge ; do
-		if=${node}_if${ifnum}_bridge
-		bridge=${!if}
-		echo "Deleting Bridge ${bridge}"
-		sudo brctl delbr ${bridge} 2> /dev/null
-		#
-		ifnum=`expr $ifnum + 1`
-	done
+    ifnum=1
+    while var_exists name=${node}_if${ifnum}_bridge ; do
+        if=${node}_if${ifnum}_bridge
+        bridge=${!if}
+        echo "Deleting Bridge ${bridge}"
+        sudo brctl delbr ${bridge} 2> /dev/null
+        #
+        ifnum=`expr $ifnum + 1`
+    done
     #
 done
