@@ -9,6 +9,12 @@ VM_storage_dir=/vms
 # Mac Address Prefix (first 3 MAC Address Bytes)
 MacPrefix="00:1C:44:"
 #
+# Linux config files
+SysCtlFile="node-sysctl.conf"
+# FRR
+FRRpackage="frr_7.0.1-1+b1_amd64.deb"
+FRRdaemons="daemons"
+#
 #########################################
 # End config
 #########################################
@@ -142,6 +148,49 @@ for node in ${global_nodes}; do
         echo "ff02::1       ip6-allnodes" >> $hostfile
         echo "ff02::2       ip6-allrouters" >> $hostfile
         #
+        # /etc/frr/frr.conf
+        frrconf=/tmp/node-frrconf-$$
+        echo "# FRR Config for node ${node}" > $frrconf
+        echo "frr defaults traditional" >> $frrconf
+        echo "hostname ${node}" >> $frrconf
+        echo "log syslog informational" >> $frrconf
+        echo "service integrated-vtysh-config" >> $frrconf
+        echo "!" >> $frrconf
+        ifnum=1
+        ensnum=2
+        while var_exists name=${node}_if${ifnum}_bridge ; do
+            if=${node}_if${ifnum}_bridge
+            bridge=${!if}
+            echo "interface ens${ensnum}" >> $frrconf
+            echo " description Connected to KVM bridge ${bridge}" >> $frrconf
+            if var_exists name=${node}_if${ifnum}_ipv4 ; then
+                ip=${node}_if${ifnum}_ipv4
+                addr=${!ip}
+                echo " ip address ${addr}" >> $frrconf
+            fi
+            if var_exists name=${node}_if${ifnum}_ipv6 ; then
+                ip=${node}_if${ifnum}_ipv6
+                addr=${!ip}
+                echo " ipv6 address ${addr}" >> $frrconf
+            fi
+            echo "!" >> $frrconf
+            ifnum=`expr $ifnum + 1`
+            ensnum=`expr $ensnum + 1`
+        done
+        echo "line vty" >> $frrconf
+        echo "!" >> $frrconf
+        #
+        # /etc/frr/vtysh.conf
+        vtyshconf=/tmp/node-vtyshconf-$$
+        echo "service integrated-vtysh-config" >> $vtyshconf
+        #
+        # /etc/runonce.d/80_frr_install.sh
+        frrinstall=/tmp/node-frrinstall-$$
+        echo "yes \"\" | DEBIAN_FRONTEND=noninteractive dpkg -i /root/${FRRpackage}" >> $frrinstall
+        echo "chown frr:frr /etc/frr/frr.conf" >> $frrinstall
+        echo "chown frr:frr /etc/frr/daemons" >> $frrinstall
+        echo "chown frr:frr /etc/frr/vtysh.conf" >> $frrinstall
+        #
         # Files prepared, now add them to new VM disks
         echo "   ${node}: Updating VM disk with configuration"
         sudo /usr/bin/guestfish \
@@ -149,10 +198,20 @@ for node in ${global_nodes}; do
             rm-rf /etc/udev/rules.d/70-persistent-net.rules : \
             upload $iffile /etc/network/interfaces : \
             upload $hostnamefile /etc/hostname : \
-            upload $hostfile /etc/hosts
+            upload $hostfile /etc/hosts : \
+            upload $SysCtlFile /etc/sysctl.d/99-sysctl.conf : \
+            upload ${Script_Dir}/frr/${FRRpackage} /root/${FRRpackage} : \
+            mkdir /etc/frr : \
+            upload $frrconf /etc/frr/frr.conf : \
+            upload $vtyshconf /etc/frr/vtysh.conf : \
+            upload ${Script_Dir}/frr/${FRRdaemons} /etc/frr/daemons : \
+            upload $frrinstall /etc/runonce.d/80_frr_install.sh
 
         rm $iffile
         rm $hostnamefile
         rm $hostfile
+        rm $frrconf
+        rm $vtyshconf
+        rm $frrinstall
     fi
 done
