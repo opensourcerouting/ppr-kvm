@@ -188,6 +188,7 @@ for node in ${global_nodes}; do
         # /etc/runonce.d/80_frr_install.sh
         frrinstall=/tmp/node-frrinstall-$$
         echo "yes \"\" | DEBIAN_FRONTEND=noninteractive dpkg -i /root/${FRRpackage}" >> $frrinstall
+        echo "rm -f /root/${FRRpackage}" >> $frrinstall
         echo "chown frr:frr /etc/frr/frr.conf" >> $frrinstall
         echo "chown frr:frr /etc/frr/daemons" >> $frrinstall
         echo "chown frr:frr /etc/frr/vtysh.conf" >> $frrinstall
@@ -215,4 +216,5 @@ for node in ${global_nodes}; do
         rm $vtyshconf
         rm $frrinstall
     fi
+    virsh start $node 2> /dev/null
 done
