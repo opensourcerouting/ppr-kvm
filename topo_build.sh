@@ -83,6 +83,7 @@ for node in ${global_nodes}; do
             echo "   $node: interface if$ifnum - Creating Bridge ${bridge}"
             sudo brctl addbr ${bridge} 2> /dev/null
         fi
+        sudo ip link set ${bridge} up
         #
         ifnum=`expr $ifnum + 1`
     done
