@@ -68,6 +68,7 @@ for node in ${global_nodes}; do
         BridgeFound=`grep "${bridge}:" /proc/net/dev`
         if [ -n "${BridgeFound}" ] ; then
             echo "Deleting Bridge ${bridge}"
+            sudo ip link set ${bridge} down 2> /dev/null
             sudo brctl delbr ${bridge} 2> /dev/null
         fi
         #
