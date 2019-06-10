@@ -2,40 +2,49 @@
 #
 global:
   nodes: "r1 r2 r3"
-  phy_if: "eth0"
+  phy_if: "ext1"
 #
 r1:
   if1:
+    phy: ens2
     bridge: br100
     ipv4: 192.168.100.1/24
     ipv6: fc00:1:100::1/64
   if2:
+    phy: ens3
     bridge: br101
     ipv4: 192.168.101.1/24
     ipv6: fc00:1:101::1/64
   if3:
+    phy: ens4
     bridge: br102
     ipv4: 192.168.102.1/24
     ipv6: fc00:1:102::1/64
 
 r2:
   if1:
+    phy: ens2
     bridge: br100
     ipv4: 192.168.100.2/24
     ipv6: fc00:1:100::2/64
   if2:
+    phy: ens3
     bridge: br103
     ipv4: 192.168.103.2/24
     ipv6: fc00:1:103::2/64
 
 r3:
   if1:
+    phy: ens2
     bridge: br101
     ipv4: 192.168.101.3/24
     ipv6: fc00:1:101::3/64
   if2:
+    phy: ens3
     bridge: br102
     ipv4: 192.168.102.3/24
     ipv6: fc00:1:102::3/64
 
-eth0: br110
+ext1:
+  phy: eth0
+  bridge: br110

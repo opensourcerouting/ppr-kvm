@@ -125,19 +125,18 @@ for node in ${global_nodes}; do
         echo "iface lo inet loopback" >> $iffile
         echo "#" >> $iffile
         ifnum=1
-        ensnum=2
         while var_exists name=${node}_if${ifnum}_bridge ; do
             if=${node}_if${ifnum}_bridge
             bridge=${!if}
+            phy=${node}_if${ifnum}_phy
             echo "# Interface $ifnum, connected to bridge $bridge" >> $iffile
-            echo "auto ens${ensnum}" >> $iffile
-            echo "iface ens${ensnum} inet manual" >> $iffile
+            echo "auto ${!phy}" >> $iffile
+            echo "iface ${!phy} inet manual" >> $iffile
             echo "  up ip link set \$IFACE up" >> $iffile
             echo "  down ip link set \$IFACE down" >> $iffile
-            echo "iface ens${ensnum} inet6 manual" >> $iffile
+            echo "iface ${!phy} inet6 manual" >> $iffile
             echo "#" >> $iffile
             ifnum=`expr $ifnum + 1`
-            ensnum=`expr $ensnum + 1`
         done
         #
         # /etc/hosts
@@ -158,11 +157,11 @@ for node in ${global_nodes}; do
         echo "service integrated-vtysh-config" >> $frrconf
         echo "!" >> $frrconf
         ifnum=1
-        ensnum=2
         while var_exists name=${node}_if${ifnum}_bridge ; do
             if=${node}_if${ifnum}_bridge
             bridge=${!if}
-            echo "interface ens${ensnum}" >> $frrconf
+            phy=${node}_if${ifnum}_phy
+            echo "interface ${!phy}" >> $frrconf
             echo " description Connected to KVM bridge ${bridge}" >> $frrconf
             if var_exists name=${node}_if${ifnum}_ipv4 ; then
                 ip=${node}_if${ifnum}_ipv4
@@ -176,7 +175,6 @@ for node in ${global_nodes}; do
             fi
             echo "!" >> $frrconf
             ifnum=`expr $ifnum + 1`
-            ensnum=`expr $ensnum + 1`
         done
         echo "line vty" >> $frrconf
         echo "!" >> $frrconf
