@@ -75,20 +75,21 @@ for node in ${global_nodes}; do
     #
     # Creating bridges as needed
     ifnum=1
-    while var_exists name=${node}_if${ifnum}_bridge ; do
+    while var_exists name=${node}_if${ifnum}_phy ; do
         if=${node}_if${ifnum}_bridge
-        bridge=${!if}
-        BridgeFound=`grep "${bridge}:" /proc/net/dev`
-        if ! [ -n "${BridgeFound}" ] ; then
-            echo "   $node: interface if$ifnum - Creating Bridge ${bridge}"
-            sudo brctl addbr ${bridge} 2> /dev/null
+        if var_exists name=${if} ; then
+            bridge=${!if}
+            BridgeFound=`grep "${bridge}:" /proc/net/dev`
+            if ! [ -n "${BridgeFound}" ] ; then
+                echo "   $node: interface if$ifnum - Creating Bridge ${bridge}"
+                sudo brctl addbr ${bridge} 2> /dev/null
+            fi
+            sudo ip link set ${bridge} up
+            #
         fi
-        sudo ip link set ${bridge} up
-        #
         ifnum=`expr $ifnum + 1`
     done
     #
-
     if [ "`virsh list --all | grep \ $node\ `" = "" ]; then
         sudo sh -c "pv -B 500M ${VM_Template_disk} > ${VM_storage_dir}/${node}_disk.qcow2"
         node_xml="/tmp/node_$node.xml"
@@ -99,17 +100,18 @@ for node in ${global_nodes}; do
         rm -rf $node_xml
         # Node defined, now add interfaces
         ifnum=1
-        while var_exists name=${node}_if${ifnum}_bridge ; do
-                if=${node}_if${ifnum}_bridge
-                bridge=${!if}
+        while var_exists name=${node}_if${ifnum}_phy ; do
+            bridgeVar=${node}_if${ifnum}_bridge
+            if var_exists name=${bridgeVar} ; then
                 nodeNrHigh=`expr ${nodeNr} / 256`
                 nodeNrLow=`expr ${nodeNr} % 256`
                 macaddr=${MacPrefix}`printf "%02x\n" ${nodeNrHigh}`:`printf "%02x\n" ${nodeNrLow}`:`printf "%02x\n" $ifnum`
-                echo "   ${node}: Adding Interface $ifnum with MAC $macaddr, connected to ${bridge}"
+                echo "   ${node}: Adding Interface $ifnum with MAC $macaddr, connected to ${!bridgeVar}"
                 virsh attach-interface $node --model virtio \
-                    --type bridge --source $bridge --mac $macaddr --persistent
+                    --type bridge --source ${!bridgeVar} --mac $macaddr --persistent
                 #
-                ifnum=`expr $ifnum + 1`
+            fi
+            ifnum=`expr $ifnum + 1`
         done
         # Interfaces added. Now adjust VM config
         # 
@@ -120,22 +122,26 @@ for node in ${global_nodes}; do
         #
         # /etc/network/interfaces
         iffile=/tmp/node-if-$$
-        echo "# The loopback network interface" > $iffile
-        echo "auto lo" >> $iffile
-        echo "iface lo inet loopback" >> $iffile
-        echo "#" >> $iffile
         ifnum=1
-        while var_exists name=${node}_if${ifnum}_bridge ; do
-            if=${node}_if${ifnum}_bridge
-            bridge=${!if}
+        while var_exists name=${node}_if${ifnum}_phy ; do
+            bridgeVar=${node}_if${ifnum}_bridge
             phy=${node}_if${ifnum}_phy
-            echo "# Interface $ifnum, connected to bridge $bridge" >> $iffile
-            echo "auto ${!phy}" >> $iffile
-            echo "iface ${!phy} inet manual" >> $iffile
-            echo "  up ip link set \$IFACE up" >> $iffile
-            echo "  down ip link set \$IFACE down" >> $iffile
-            echo "iface ${!phy} inet6 manual" >> $iffile
-            echo "#" >> $iffile
+            if var_exists name=${bridgeVar} ; then
+                phy=${node}_if${ifnum}_phy
+                echo "# Interface ${ifnum}, connected to bridge ${!bridgeVar}" >> $iffile
+                echo "auto ${!phy}" >> $iffile
+                echo "iface ${!phy} inet manual" >> $iffile
+                echo "  up ip link set \$IFACE up" >> $iffile
+                echo "  down ip link set \$IFACE down" >> $iffile
+                echo "iface ${!phy} inet6 manual" >> $iffile
+                echo "#" >> $iffile
+            else
+                phy=${node}_if${ifnum}_phy
+                echo "# Loopback ${!phy}" >> $iffile
+                echo "auto ${!phy}" >> $iffile
+                echo "iface ${!phy} inet loopback" >> $iffile
+                echo "#" >> $iffile
+            fi
             ifnum=`expr $ifnum + 1`
         done
         #
@@ -149,6 +155,12 @@ for node in ${global_nodes}; do
         echo "ff02::2       ip6-allrouters" >> $hostfile
         #
         # /etc/frr/frr.conf
+        #
+        isisNameVar=${node}_isis_name
+        isisTypeVar=${node}_isis_type
+        isisAreaVar=${node}_isis_area
+        #
+        # Config header first
         frrconf=/tmp/node-frrconf-$$
         echo "# FRR Config for node ${node}" > $frrconf
         echo "frr defaults traditional" >> $frrconf
@@ -156,26 +168,50 @@ for node in ${global_nodes}; do
         echo "log syslog informational" >> $frrconf
         echo "service integrated-vtysh-config" >> $frrconf
         echo "!" >> $frrconf
+        # interface config next
         ifnum=1
-        while var_exists name=${node}_if${ifnum}_bridge ; do
-            if=${node}_if${ifnum}_bridge
-            bridge=${!if}
+        while var_exists name=${node}_if${ifnum}_phy ; do
+            bridgeVar=${node}_if${ifnum}_bridge
             phy=${node}_if${ifnum}_phy
             echo "interface ${!phy}" >> $frrconf
-            echo " description Connected to KVM bridge ${bridge}" >> $frrconf
-            if var_exists name=${node}_if${ifnum}_ipv4 ; then
-                ip=${node}_if${ifnum}_ipv4
-                addr=${!ip}
-                echo " ip address ${addr}" >> $frrconf
+            if var_exists name=${bridgeVar} ; then
+                echo " description Connected to KVM bridge ${bridge}" >> $frrconf
+            else
+                echo " description Loopback"
             fi
-            if var_exists name=${node}_if${ifnum}_ipv6 ; then
-                ip=${node}_if${ifnum}_ipv6
-                addr=${!ip}
-                echo " ipv6 address ${addr}" >> $frrconf
+            ipv4AddrVar=${node}_if${ifnum}_ipv4
+            if var_exists name=${ipv4AddrVar} ; then
+                for addr in ${!ipv4AddrVar}; do
+                    echo " ip address ${addr}" >> $frrconf
+                done
+            fi
+            ipv6AddrVar=${node}_if${ifnum}_ipv6
+            if var_exists name=${ipv6AddrVar} ; then
+                for addr in ${!ipv6AddrVar}; do
+                    echo " ipv6 address ${addr}" >> $frrconf
+                done
+            fi
+            isisIPv4Proc=${node}_if${ifnum}_isis_ipv4
+            if var_exists name=${isisIPv4Proc} ; then
+                echo " ip router isis ${!isisIPv4Proc}" >> $frrconf
+            fi
+            isisIPv6Proc=${node}_if${ifnum}_isis_ipv6
+            if var_exists name=${isisIPv6Proc} ; then
+                echo " ipv6 router isis ${!isisIPv6Proc}" >> $frrconf
             fi
             echo "!" >> $frrconf
             ifnum=`expr $ifnum + 1`
         done
+        # Now Add Router ISIS config
+        if var_exists name=${isisNameVar} ; then
+            echo "router isis ${!isisNameVar}" >> $frrconf
+            if var_exists name=${isisTypeVar} ; then
+                echo " is-type ${!isisTypeVar}" >> $frrconf
+            fi
+            echo " net ${!isisAreaVar}" >> $frrconf
+            echo "!" >> $frrconf
+        fi
+        # Finish config
         echo "line vty" >> $frrconf
         echo "!" >> $frrconf
         #
