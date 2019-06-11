@@ -269,3 +269,15 @@ for node in ${global_nodes}; do
     fi
     virsh start $node 2> /dev/null
 done
+
+# Process external interface
+for extif in ${global_phyif}; do
+    echo "Processing external Interface ${extif}"
+    bridgeVar=${extif}_bridge
+    phyVar=${extif}_phy
+    if var_exists name=${bridgeVar} ; then
+        echo "   External Interface ${extif}: interface ${!phyVar} added to bridge ${!bridgeVar}"
+        sudo brctl addif ${!bridgeVar} ${!phyVar} 2> /dev/null
+        sudo ip link set ${!phyVar} up
+    fi
+done
