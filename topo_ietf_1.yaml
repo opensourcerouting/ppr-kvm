@@ -53,7 +53,20 @@ Rs:
     ipv6: fc00:103::f001/64
     isis:
       ipv6: pprlab
-
+  if5:
+    ipv6tunnel: ip6ip6
+    phy: tunppr1
+    remote: fc00:2000::1
+    local: fc00:1000::1
+    ttl: 64
+    ipv6: fc00:ffff:0001::1/64
+  if6:
+    ipv6tunnel: ip6ip6
+    phy: tunppr2
+    remote: fc00:2000::2
+    local: fc00:1000::2
+    ttl: 64
+    ipv6: fc00:ffff:0002::1/64
   isis:
     name: pprlab
     type: level-1-2
@@ -82,6 +95,20 @@ Rd:
     ipv6: fc00:121::f002/64
     isis:
       ipv6: pprlab
+  if5:
+    ipv6tunnel: ip6ip6
+    phy: tunppr1
+    remote: fc00:1000::1
+    local: fc00:2000::1
+    ttl: 64
+    ipv6: fc00:ffff:0001::2/64
+  if6:
+    ipv6tunnel: ip6ip6
+    phy: tunppr2
+    remote: fc00:1000::2
+    local: fc00:2000::2
+    ttl: 64
+    ipv6: fc00:ffff:0002::2/64
   isis:
     name: pprlab
     type: level-1-2

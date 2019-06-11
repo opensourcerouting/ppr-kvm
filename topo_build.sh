@@ -125,12 +125,26 @@ for node in ${global_nodes}; do
         ifnum=1
         while var_exists name=${node}_if${ifnum}_phy ; do
             bridgeVar=${node}_if${ifnum}_bridge
+            tunnelVar=${node}_if${ifnum}_ipv6tunnel
             phy=${node}_if${ifnum}_phy
             if var_exists name=${bridgeVar} ; then
                 phy=${node}_if${ifnum}_phy
                 echo "# Interface ${ifnum}, connected to bridge ${!bridgeVar}" >> $iffile
                 echo "auto ${!phy}" >> $iffile
                 echo "iface ${!phy} inet manual" >> $iffile
+                echo "  up ip link set \$IFACE up" >> $iffile
+                echo "  down ip link set \$IFACE down" >> $iffile
+                echo "iface ${!phy} inet6 manual" >> $iffile
+                echo "#" >> $iffile
+            elif var_exists name=${tunnelVar} ; then
+                echo "# Interface ${ifnum} - ${tunnelVar} IPv6 Tunnel" >> $iffile
+                echo "auto ${!phy}" >> $iffile
+                echo "iface ${!phy} inet manual" >> $iffile
+                tunnelLocalVar=${node}_if${ifnum}_local
+                tunnelRemoteVar=${node}_if${ifnum}_remote
+                tunnelTTLVar=${node}_if${ifnum}_ttl
+                echo "  pre-up ip -6 tunnel add \$IFACE mode ${!tunnelVar} remote ${!tunnelRemoteVar} local ${!tunnelLocalVar} ttl ${!tunnelTTLVar}" >> $iffile
+                echo "  post-down ip -6 tunnel del \$IFACE" >> $iffile
                 echo "  up ip link set \$IFACE up" >> $iffile
                 echo "  down ip link set \$IFACE down" >> $iffile
                 echo "iface ${!phy} inet6 manual" >> $iffile
@@ -172,12 +186,15 @@ for node in ${global_nodes}; do
         ifnum=1
         while var_exists name=${node}_if${ifnum}_phy ; do
             bridgeVar=${node}_if${ifnum}_bridge
+            ipv6TunnelVar=${node}_if${ifnum}_ipv6tunnel
             phy=${node}_if${ifnum}_phy
             echo "interface ${!phy}" >> $frrconf
             if var_exists name=${bridgeVar} ; then
                 echo " description Connected to KVM bridge ${bridge}" >> $frrconf
+            elif var_exists name=${ipv6TunnelVar} ; then
+                echo " description IPv6 Tunnel (Mode ${ipv6TunnelVar})" >> $frrconf
             else
-                echo " description Loopback"
+                echo " description Loopback" >> $frrconf
             fi
             ipv4AddrVar=${node}_if${ifnum}_ipv4
             if var_exists name=${ipv4AddrVar} ; then
