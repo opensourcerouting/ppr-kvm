@@ -38,6 +38,18 @@ var_exists() { # check if variable is set at all
 #
 eval $(parse_yaml ${YAML_Configfile})
 #
+# Process external interface
+#
+for extif in ${global_phyif}; do
+    echo "Processing external Interface ${extif}"
+    bridgeVar=${extif}_bridge
+    phyVar=${extif}_phy
+    if var_exists name=${bridgeVar} ; then
+        sudo brctl delif ${!bridgeVar} ${!phyVar} 2> /dev/null
+        echo "   External Interface ${extif}: interface ${!phyVar} removed from bridge ${!bridgeVar}"
+    fi
+done
+#
 # Delete nodes
 #
 for node in ${global_nodes}; do
