@@ -227,6 +227,7 @@ for node in ${global_nodes}; do
             fi
             echo " net ${!isisAreaVar}" >> $frrconf
             echo " redistribute ipv6 static level-1" >> $frrconf
+            echo " redistribute ipv6 static level-2" >> $frrconf
             echo "!" >> $frrconf
         fi
         # Now Add Static Router config

@@ -81,9 +81,8 @@ Rs:
     area: 49.1111.0000.f001.00
   ipv6static1:
     net: fc00:201::/48
-    dest: fc00:101::ce1
+    dest: fc00:100::ce1
     distance: 100
-
 
 Rd:
   if1:
@@ -126,8 +125,8 @@ Rd:
     type: level-1-2
     area: 49.2222.0000.f002.00
   ipv6static1:
-    net: fc00:201::/48
-    dest: fc00:101::ce1
+    net: fc00:202::/48
+    dest: fc00:101::ce2
     distance: 100
 
 R1:
