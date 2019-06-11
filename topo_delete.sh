@@ -62,7 +62,8 @@ done
 #
 for node in ${global_nodes}; do
     ifnum=1
-    while var_exists name=${node}_if${ifnum}_bridge ; do
+    while var_exists name=${node}_if${ifnum}_phy ; do
+      if var_exists name=${node}_if${ifnum}_bridge ; then
         if=${node}_if${ifnum}_bridge
         bridge=${!if}
         BridgeFound=`grep "${bridge}:" /proc/net/dev`
@@ -72,7 +73,8 @@ for node in ${global_nodes}; do
             sudo brctl delbr ${bridge} 2> /dev/null
         fi
         #
-        ifnum=`expr $ifnum + 1`
+      fi
+      ifnum=`expr $ifnum + 1`
     done
     #
 done
