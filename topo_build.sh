@@ -190,9 +190,9 @@ for node in ${global_nodes}; do
             phy=${node}_if${ifnum}_phy
             echo "interface ${!phy}" >> $frrconf
             if var_exists name=${bridgeVar} ; then
-                echo " description Connected to KVM bridge ${bridge}" >> $frrconf
+                echo " description Connected to KVM bridge ${!bridgeVar}" >> $frrconf
             elif var_exists name=${ipv6TunnelVar} ; then
-                echo " description IPv6 Tunnel (Mode ${ipv6TunnelVar})" >> $frrconf
+                echo " description IPv6 Tunnel (Mode ${!ipv6TunnelVar})" >> $frrconf
             else
                 echo " description Loopback" >> $frrconf
             fi
