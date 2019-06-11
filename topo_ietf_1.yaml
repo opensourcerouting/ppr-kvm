@@ -18,6 +18,10 @@ CE1:
     phy: ens3
     bridge: br201
     ipv6: fc00:201::ce1/64
+  ipv6static1:
+    net: ::/0
+    dest: fc00:100::f001
+    distance: 100
 
 CE2:
   if1:
@@ -30,6 +34,10 @@ CE2:
     phy: ens3
     bridge: br202
     ipv6: fc00:202::ce2/64
+  ipv6static1:
+    net: ::/0
+    dest: fc00:101::f002
+    distance: 100
 
 Rs:
   if1:
@@ -71,6 +79,10 @@ Rs:
     name: pprlab
     type: level-1-2
     area: 49.1111.0000.f001.00
+  ipv6static1:
+    net: fc00:201::/48
+    dest: fc00:101::ce1
+    distance: 100
 
 
 Rd:
@@ -113,6 +125,10 @@ Rd:
     name: pprlab
     type: level-1-2
     area: 49.2222.0000.f002.00
+  ipv6static1:
+    net: fc00:201::/48
+    dest: fc00:101::ce1
+    distance: 100
 
 R1:
   if1:
@@ -466,8 +482,8 @@ Rc:
 
 ext1:
   bridge: br201
-  phy: eth1
+  phy: ens1f0
 
 ext2: 
   bridge: br202
-  phy: eth2
+  phy: ens1f1

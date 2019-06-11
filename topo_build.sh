@@ -226,8 +226,19 @@ for node in ${global_nodes}; do
                 echo " is-type ${!isisTypeVar}" >> $frrconf
             fi
             echo " net ${!isisAreaVar}" >> $frrconf
+            echo " redistribute ipv6 static level-1" >> $frrconf
             echo "!" >> $frrconf
         fi
+        # Now Add Static Router config
+        staticnum=1
+        while var_exists name=${node}_ipv6static${staticnum}_net ; do
+            netvar=${node}_ipv6static${staticnum}_net
+            destvar=${node}_ipv6static${staticnum}_dest
+            distancevar=${node}_ipv6static${staticnum}_distance
+            echo "ipv6 route ${!netvar} ${!destvar} ${!distancevar}" >> $frrconf
+            staticnum=`expr $staticnum + 1`
+        done
+        echo "!" >> $frrconf
         # Finish config
         echo "line vty" >> $frrconf
         echo "!" >> $frrconf
