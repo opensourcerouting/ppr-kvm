@@ -2,8 +2,8 @@
 ##set -x
 #
 if test $# -lt 1 ; then
-        echo "Need YAML Config file as argument"
-        exit 1
+    echo "Need YAML Config file as argument"
+    exit 1
 fi
 #
 YAML_Configfile=$1
@@ -12,20 +12,20 @@ YAML_Configfile=$1
 Script_Dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 #
 function parse_yaml {
-   local prefix=$2
-   local s='[[:space:]]*' w='[a-zA-Z0-9_]*' fs=$(echo @|tr @ '\034')
-   sed -ne "s|^\($s\):|\1|" \
+    local prefix=$2
+    local s='[[:space:]]*' w='[a-zA-Z0-9_]*' fs=$(echo @|tr @ '\034')
+    sed -ne "s|^\($s\):|\1|" \
         -e "s|^\($s\)\($w\)$s:$s[\"']\(.*\)[\"']$s\$|\1$fs\2$fs\3|p" \
         -e "s|^\($s\)\($w\)$s:$s\(.*\)$s\$|\1$fs\2$fs\3|p"  $1 |
-   awk -F$fs '{
-      indent = length($1)/2;
-      vname[indent] = $2;
-      for (i in vname) {if (i > indent) {delete vname[i]}}
-      if (length($3) > 0) {
-         vn=""; for (i=0; i<indent; i++) {vn=(vn)(vname[i])("_")}
-         printf("%s%s%s=\"%s\"\n", "'$prefix'",vn, $2, $3);
-      }
-   }'
+    awk -F$fs '{
+        indent = length($1)/2;
+        vname[indent] = $2;
+        for (i in vname) {if (i > indent) {delete vname[i]}}
+        if (length($3) > 0) {
+            vn=""; for (i=0; i<indent; i++) {vn=(vn)(vname[i])("_")}
+            printf("%s%s%s=\"%s\"\n", "'$prefix'",vn, $2, $3);
+        }
+    }'
 }
 #
 var_exists() { # check if variable is set at all
@@ -63,18 +63,18 @@ done
 for node in ${global_nodes}; do
     ifnum=1
     while var_exists name=${node}_if${ifnum}_phy ; do
-      if var_exists name=${node}_if${ifnum}_bridge ; then
-        if=${node}_if${ifnum}_bridge
-        bridge=${!if}
-        BridgeFound=`grep "${bridge}:" /proc/net/dev`
-        if [ -n "${BridgeFound}" ] ; then
-            echo "Deleting Bridge ${bridge}"
-            sudo ip link set ${bridge} down 2> /dev/null
-            sudo brctl delbr ${bridge} 2> /dev/null
+        if var_exists name=${node}_if${ifnum}_bridge ; then
+            if=${node}_if${ifnum}_bridge
+            bridge=${!if}
+            BridgeFound=`grep "${bridge}:" /proc/net/dev`
+            if [ -n "${BridgeFound}" ] ; then
+                echo "Deleting Bridge ${bridge}"
+                sudo ip link set ${bridge} down 2> /dev/null
+                sudo brctl delbr ${bridge} 2> /dev/null
+            fi
+            #
         fi
-        #
-      fi
-      ifnum=`expr $ifnum + 1`
+        ifnum=`expr $ifnum + 1`
     done
     #
 done
