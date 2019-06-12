@@ -226,8 +226,6 @@ for node in ${global_nodes}; do
                 echo " is-type ${!isisTypeVar}" >> $frrconf
             fi
             echo " net ${!isisAreaVar}" >> $frrconf
-            echo " redistribute ipv6 static level-1" >> $frrconf
-            echo " redistribute ipv6 static level-2" >> $frrconf
             echo "!" >> $frrconf
         fi
         # Now Add Static Router config
@@ -262,6 +260,17 @@ for node in ${global_nodes}; do
         echo "chown frr:frr /etc/frr/vtysh.conf" >> $frrinstall
         echo "rm -f /root/${FRRpackage}" >> $frrinstall
         #
+        # /etc/runboot.d
+        startnum=1
+        bootupfile=/tmp/startup-$$
+        echo "#!/usr/bin/env bash" > $bootupfile
+        echo "#" >> $bootupfile
+        while var_exists name=${node}_start${startnum} ; do
+            line=${node}_start${startnum}
+            echo "${!line}" >> $bootupfile
+            startnum=`expr $startnum + 1`            
+        done
+        #
         # Files prepared, now add them to new VM disks
         echo "   ${node}: Updating VM disk with configuration"
         sudo /usr/bin/guestfish \
@@ -276,7 +285,8 @@ for node in ${global_nodes}; do
             upload $frrconf /etc/frr/frr.conf : \
             upload $vtyshconf /etc/frr/vtysh.conf : \
             upload ${Script_Dir}/frr/${FRRdaemons} /etc/frr/daemons : \
-            upload $frrinstall /etc/runonce.d/80_frr_install.sh
+            upload $frrinstall /etc/runonce.d/80_frr_install.sh : \
+            upload $bootupfile /etc/runboot.d/10_bootconfig.sh
 
         rm $iffile
         rm $hostnamefile
@@ -284,6 +294,7 @@ for node in ${global_nodes}; do
         rm $frrconf
         rm $vtyshconf
         rm $frrinstall
+        rm $bootupfile
     fi
     virsh start $node 2> /dev/null
 done
