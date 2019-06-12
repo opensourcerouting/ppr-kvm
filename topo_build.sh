@@ -250,11 +250,17 @@ for node in ${global_nodes}; do
         #
         # /etc/runonce.d/80_frr_install.sh
         frrinstall=/tmp/node-frrinstall-$$
-        echo "yes \"\" | DEBIAN_FRONTEND=noninteractive dpkg -i /root/${FRRpackage}" >> $frrinstall
-        echo "rm -f /root/${FRRpackage}" >> $frrinstall
+        echo "#!/usr/bin/env bash" > $frrinstall
+        echo "#" >> $frrinstall
+        echo "while [ \"\`which vtysh\`\" = \"\" ] ; do" >> $frrinstall
+        echo "  yes \"\" | DEBIAN_FRONTEND=noninteractive dpkg -i /root/${FRRpackage}" >> $frrinstall
+        echo "  if [ \"\`which vtysh\`\" == \"\" ] ; then sleep 5; fi" >> $frrinstall
+        echo "done" >> $frrinstall
+        echo "chown frr:frr /etc/frr" >> $frrinstall
         echo "chown frr:frr /etc/frr/frr.conf" >> $frrinstall
         echo "chown frr:frr /etc/frr/daemons" >> $frrinstall
         echo "chown frr:frr /etc/frr/vtysh.conf" >> $frrinstall
+        echo "rm -f /root/${FRRpackage}" >> $frrinstall
         #
         # Files prepared, now add them to new VM disks
         echo "   ${node}: Updating VM disk with configuration"
