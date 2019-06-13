@@ -226,6 +226,7 @@ for node in ${global_nodes}; do
                 echo " is-type ${!isisTypeVar}" >> $frrconf
             fi
             echo " net ${!isisAreaVar}" >> $frrconf
+            echo " redistribute ipv6 connected level-2" >> $frrconf
             echo "!" >> $frrconf
         fi
         # Now Add Static Router config
@@ -271,6 +272,27 @@ for node in ${global_nodes}; do
             startnum=`expr $startnum + 1`            
         done
         #
+        # /etc/runboot.d/10_tunnels.sh
+        tunnelSetNum=1
+        tunnelcfgfile=/tmp/tunnel-config-$$
+        cp ${Script_Dir}/make_static_tunnels.sh $tunnelcfgfile
+        echo "#" >> $tunnelcfgfile
+        while var_exists name=${node}_tunnelset${tunnelSetNum}_count ; do
+            line=${node}_tunnelset${tunnelSetNum}
+            echo "#" >> $tunnelcfgfile
+            echo "# Tunnel Set ${tunnelSetNum}" >> $tunnelcfgfile
+            echo "#" >> $tunnelcfgfile
+            numTunnelsVar=${node}_tunnelset${tunnelSetNum}_count
+            startTunVar=${node}_tunnelset${tunnelSetNum}_start
+            tunModeVar=${node}_tunnelset${tunnelSetNum}_mode
+            tunSideVar=${node}_tunnelset${tunnelSetNum}_thisSide
+            tunSourceVar=${node}_tunnelset${tunnelSetNum}_srcPrefix
+            tunDestVar=${node}_tunnelset${tunnelSetNum}_dstPrefix
+            tunNetVar=${node}_tunnelset${tunnelSetNum}_netPrefix
+            echo "make_tunnels startTun=${!startTunVar} numTunnels=${!numTunnelsVar} tunSide=${!tunSideVar} tunMode=${!tunModeVar} tunSource=${!tunSourceVar} tunDest=${!tunDestVar} tunNet=${!tunNetVar}"  >> $tunnelcfgfile
+            tunnelSetNum=`expr $tunnelSetNum + 1`            
+        done
+        #
         # Files prepared, now add them to new VM disks
         echo "   ${node}: Updating VM disk with configuration"
         sudo /usr/bin/guestfish \
@@ -279,14 +301,14 @@ for node in ${global_nodes}; do
             upload $iffile /etc/network/interfaces : \
             upload $hostnamefile /etc/hostname : \
             upload $hostfile /etc/hosts : \
-            upload $SysCtlFile /etc/sysctl.d/99-sysctl.conf : \
+            upload ${Script_Dir}/$SysCtlFile /etc/sysctl.d/99-sysctl.conf : \
             upload ${Script_Dir}/frr/${FRRpackage} /root/${FRRpackage} : \
             mkdir /etc/frr : \
             upload $frrconf /etc/frr/frr.conf : \
             upload $vtyshconf /etc/frr/vtysh.conf : \
             upload ${Script_Dir}/frr/${FRRdaemons} /etc/frr/daemons : \
             upload $frrinstall /etc/runonce.d/80_frr_install.sh : \
-            upload $bootupfile /etc/runboot.d/10_bootconfig.sh
+            upload $tunnelcfgfile /etc/runboot.d/20_make_tunnels.sh
 
         rm $iffile
         rm $hostnamefile
@@ -294,7 +316,7 @@ for node in ${global_nodes}; do
         rm $frrconf
         rm $vtyshconf
         rm $frrinstall
-        rm $bootupfile
+        rm $tunnelcfgfile
     fi
     virsh start $node 2> /dev/null
 done
