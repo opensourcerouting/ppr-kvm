@@ -4,7 +4,6 @@
 ##### Configuration starts here ##########
 # Source VM Template
 VM_Template=debian10_template
-VM_storage_dir=/vms
 #
 # Mac Address Prefix (first 3 MAC Address Bytes)
 MacPrefix="00:1C:44:"
@@ -25,6 +24,16 @@ if test $# -lt 1 ; then
 fi
 #
 YAML_Configfile=$1
+#
+# Check for Debian or RedHat System to pick correct VM template
+if [ -f /etc/redhat-release ]; then
+    HostSystem=redhat
+elif [ -f /etc/debian_version ]; then
+    HostSystem=debian
+else
+    echo "This is not a RedHat or Debian based system. Aborting"
+    exit 1
+fi
 #
 # Get Directory of this script
 Script_Dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
@@ -62,6 +71,9 @@ if [ "`virsh list --state-shutoff --all | grep \ $VM_Template`" == "" ] ; then
     exit 1
 fi
 #
+# Get VM Storage directory
+VM_storage_dir=$(dirname `virsh dumpxml ${VM_Template} | grep "source file" | grep -o "'.*'" | sed "s/'//g"`)
+#
 # Parse Topology Configuration File
 #
 eval $(parse_yaml ${YAML_Configfile})
@@ -93,7 +105,7 @@ for node in ${global_nodes}; do
     if [ "`virsh list --all | grep \ $node\ `" = "" ]; then
         sudo sh -c "pv -B 500M ${VM_Template_disk} > ${VM_storage_dir}/${node}_disk.qcow2"
         node_xml="/tmp/node_$node.xml"
-        cp ${Script_Dir}/node-template.xml $node_xml
+        cp ${Script_Dir}/node-template-${HostSystem}.xml $node_xml
         sed -i "s|__TEMPLATENAME__|$node|g" $node_xml
         sed -i "s|__TEMPLATEDISK__|${VM_storage_dir}/${node}_disk.qcow2|g" $node_xml
         virsh define $node_xml
