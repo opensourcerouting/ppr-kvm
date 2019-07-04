@@ -330,7 +330,6 @@ for node in ${global_nodes}; do
         echo "chown frr:frr /etc/frr/daemons" >> $frrinstall
         echo "chown frr:frr /etc/frr/vtysh.conf" >> $frrinstall
         echo "rm -f /root/${FRRpackage}" >> $frrinstall
-        echo "touch /var/log/frr.log"
         #
         # /etc/runboot.d
         startnum=1
