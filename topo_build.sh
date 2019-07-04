@@ -57,7 +57,34 @@ function parse_yaml {
         }
     }'
 }
-#
+
+function get_lo_v6addr {
+    local node=$1
+    ifnum=1
+    ipv6Loopback=""
+    while var_exists name=${node}_if${ifnum}_phy ; do
+        bridgeVar=${node}_if${ifnum}_bridge
+        ipv6TunnelVar=${node}_if${ifnum}_ipv6tunnel
+        phy=${node}_if${ifnum}_phy
+        if var_exists name=${bridgeVar} ; then
+            continue
+        elif var_exists name=${ipv6TunnelVar} ; then
+            continue
+        else
+            # Found Loopback - get IPv6
+            ipv6AddrVar=${node}_if${ifnum}_ipv6
+            if var_exists name=${ipv6AddrVar} ; then
+                for addr in ${!ipv6AddrVar}; do
+                    ipv6Loopback=${addr}
+                    break
+                done
+            fi
+            break
+        fi
+    done
+}
+
+
 var_exists() { # check if variable is set at all
     local "$@" # inject 'name' argument in local scope
     &>/dev/null declare -p "$name" # return 0 when var is present
@@ -77,6 +104,7 @@ VM_storage_dir=$(dirname `virsh dumpxml ${VM_Template} | grep "source file" | gr
 # Parse Topology Configuration File
 #
 eval $(parse_yaml ${YAML_Configfile})
+
 #
 # Build nodes
 #
@@ -194,6 +222,8 @@ for node in ${global_nodes}; do
         echo "log syslog informational" >> $frrconf
         echo "service integrated-vtysh-config" >> $frrconf
         echo "!" >> $frrconf
+        echo "debug isis ppr" >> $frrconf
+        echo "!" >> $frrconf
         # interface config next
         ifnum=1
         while var_exists name=${node}_if${ifnum}_phy ; do
@@ -238,7 +268,35 @@ for node in ${global_nodes}; do
                 echo " is-type ${!isisTypeVar}" >> $frrconf
             fi
             echo " net ${!isisAreaVar}" >> $frrconf
-            echo " redistribute ipv6 connected level-2" >> $frrconf
+            echo " redistribute ipv6 static level-1" >> $frrconf
+            echo " ppr on" >> $frrconf
+            tunnelSetNum=1
+            while var_exists name=${node}_tunnelset${tunnelSetNum}_count ; do
+                line=${node}_tunnelset${tunnelSetNum}
+                numTunnelsVar=${node}_tunnelset${tunnelSetNum}_count
+                startTunVar=${node}_tunnelset${tunnelSetNum}_start
+                tunModeVar=${node}_tunnelset${tunnelSetNum}_mode
+                tunSideVar=${node}_tunnelset${tunnelSetNum}_thisSide
+                tunNetVar=${node}_tunnelset${tunnelSetNum}_netPrefix
+                if [ "${!tunSideVar}" = "Dest" ] ; then
+                    tunThisSideVar=${node}_tunnelset${tunnelSetNum}_dstPrefix
+                    tunOtherSideVar=${node}_tunnelset${tunnelSetNum}_srcPrefix
+                else
+                    tunThisSideVar=${node}_tunnelset${tunnelSetNum}_srcPrefix
+                    tunOtherSideVar=${node}_tunnelset${tunnelSetNum}_dstPrefix
+                fi                    
+                for((i=1; i<=${!numTunnelsVar}; i++)) ; do
+                    dec=`expr ${!startTunVar} + $i`
+                    hex=$(printf '%x' $dec)
+                    echo " ppr ipv6 ${!tunThisSideVar}::${hex}/128 prefix ${!tunOtherSideVar}::${hex}/128" >> $frrconf
+                    pprVar=${node}_ppr${i}
+                    for step in ${!pprVar}; do
+                        get_lo_v6addr ${step}
+                        echo "  pde type ipv6-node ${ipv6Loopback}"  >> $frrconf
+                    done
+                done
+                tunnelSetNum=`expr $tunnelSetNum + 1`            
+            done
             echo "!" >> $frrconf
         fi
         # Now Add Static Router config
@@ -272,6 +330,7 @@ for node in ${global_nodes}; do
         echo "chown frr:frr /etc/frr/daemons" >> $frrinstall
         echo "chown frr:frr /etc/frr/vtysh.conf" >> $frrinstall
         echo "rm -f /root/${FRRpackage}" >> $frrinstall
+        echo "touch /var/log/frr.log"
         #
         # /etc/runboot.d
         startnum=1

@@ -20,7 +20,7 @@ CE1:
     ipv6: fc00:201::ce1/64
   ipv6static1:
     net: ::/0
-    dest: fc00:100::f001
+    dest: fc00:100::ff
     distance: 100
 
 CE2:
@@ -36,43 +36,44 @@ CE2:
     ipv6: fc00:202::ce2/64
   ipv6static1:
     net: ::/0
-    dest: fc00:101::f002
+    dest: fc00:101::d
     distance: 100
 
 Rs:
   if1:
     phy: lo
-    ipv6: fc00::f001/128
+    ipv6: fc00::ff/128
     isis:
       ipv6: pprlab
   if2:
     phy: ens2
     bridge: br100
-    ipv6: fc00:100::f001/64
+    ipv6: fc00:100::ff/64
   if3:
     phy: ens3
     bridge: br102
-    ipv6: fc00:102::f001/64
+    ipv6: fc00:102::ff/64
     isis:
       ipv6: pprlab
   if4:
     phy: ens4
     bridge: br103
-    ipv6: fc00:103::f001/64
+    ipv6: fc00:103::ff/64
     isis:
       ipv6: pprlab
   tunnelset1:
     mode: ip6ip6
     thisSide: Source
-    count: 5
+    count: 1
     start: 0
     srcPrefix: fc00:1000
     dstPrefix: fc00:2000
     netPrefix: fc00:ffff
+  ppr1: "Rs R3 R4 R7 R5 Rd"
   isis:
     name: pprlab
     type: level-1
-    area: 49.1111.0000.0001.00
+    area: 49.1111.0000.1999.00
   ipv6static1:
     net: fc00:201::/48
     dest: fc00:100::ce1
@@ -81,37 +82,38 @@ Rs:
 Rd:
   if1:
     phy: lo
-    ipv6: "fc00::f002/128"
+    ipv6: "fc00::d/128"
     isis:
       ipv6: pprlab
   if2:
     phy: ens2
     bridge: br101
-    ipv6: fc00:101::f002/64
+    ipv6: fc00:101::d/64
   if3:
     phy: ens3
     bridge: br122
-    ipv6: fc00:122::f002/64
+    ipv6: fc00:122::d/64
     isis:
       ipv6: pprlab
   if4:
     phy: ens4
     bridge: br121
-    ipv6: fc00:121::f002/64
+    ipv6: fc00:121::d/64
     isis:
       ipv6: pprlab
   tunnelset1:
     mode: ip6ip6
     thisSide: Dest
-    count: 5
+    count: 1
     start: 0
     srcPrefix: fc00:1000
     dstPrefix: fc00:2000
     netPrefix: fc00:ffff
+  ppr1: "Rs R3 R4 R7 R5 Rd"
   isis:
     name: pprlab
     type: level-1
-    area: 49.1111.0000.0001.00
+    area: 49.1111.0000.1004.00
   ipv6static1:
     net: fc00:202::/48
     dest: fc00:101::ce2
@@ -173,7 +175,7 @@ R2:
   isis:
     name: pprlab
     type: level-1
-    area: 49.1111.0000.0001.00
+    area: 49.1111.0000.0002.00
 
 R3:
   if1:
@@ -220,7 +222,7 @@ R3:
   isis:
     name: pprlab
     type: level-1
-    area: 49.1111.0000.0001.00
+    area: 49.1111.0000.0003.00
 
 R4:
   if1:
@@ -273,7 +275,7 @@ R4:
   isis:
     name: pprlab
     type: level-1
-    area: 49.1111.0000.0001.00
+    area: 49.1111.0000.0004.00
 
 R5:
   if1:
@@ -320,7 +322,7 @@ R5:
   isis:
     name: pprlab
     type: level-1
-    area: 49.1111.0000.0001.00
+    area: 49.1111.0000.0005.00
 
 R6:
   if1:
@@ -355,7 +357,7 @@ R6:
   isis:
     name: pprlab
     type: level-1
-    area: 49.1111.0000.0001.00
+    area: 49.1111.0000.0006.00
 
 R7:
   if1:
@@ -390,7 +392,7 @@ R7:
   isis:
     name: pprlab
     type: level-1
-    area: 49.1111.0000.0001.00
+    area: 49.1111.0000.0007.00
 
 Ra:
   if1:
@@ -419,7 +421,7 @@ Ra:
   isis:
     name: pprlab
     type: level-1
-    area: 49.1111.0000.0001.00
+    area: 49.1111.0000.1001.00
 
 Rb:
   if1:
@@ -442,7 +444,7 @@ Rb:
   isis:
     name: pprlab
     type: level-1
-    area: 49.1111.0000.0001.00
+    area: 49.1111.0000.1002.00
 
 Rc:
   if1:
@@ -465,7 +467,7 @@ Rc:
   isis:
     name: pprlab
     type: level-1
-    area: 49.1111.0000.0001.00
+    area: 49.1111.0000.1003.00
 
 ext1:
   bridge: br201
