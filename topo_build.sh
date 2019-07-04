@@ -272,7 +272,9 @@ for node in ${global_nodes}; do
                 echo " is-type ${!isisTypeVar}" >> $frrconf
             fi
             echo " net ${!isisAreaVar}" >> $frrconf
-            echo " redistribute ipv6 static level-1" >> $frrconf
+            if [ "${global_redistributeHostRoutes}" = "true" ]; then
+                echo " redistribute ipv6 static level-1" >> $frrconf
+            fi
             echo " ppr on" >> $frrconf
             tunnelSetNum=1
             while var_exists name=${node}_tunnelset${tunnelSetNum}_count ; do

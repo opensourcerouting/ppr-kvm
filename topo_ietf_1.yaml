@@ -6,7 +6,14 @@ global:
   nodes: "R1 R2 R3 R4 R5 R6 R7 Ra Rb Rc Rs Rd CE1 CE2"
   phyif: "ext1 ext2"
 
-#
+  # If redistributeHostRoutes is set to true, then the host routes
+  #   are redistributed into ISIS and any traffic not matching a PPR
+  #   rule will use the default best path
+  # If it's set to false, then any traffic not matching PPR rules is
+  # dropped.
+  redistributeHostRoutes: false
+
+
 CE1:
   if1:
     phy: lo
@@ -71,7 +78,7 @@ Rs:
     srcPrefix: fc00:1000
     dstPrefix: fc00:2000
     netPrefix: fc00:ffff
-  ppr1: "Rs R3 R4 R7 R5 Rd"
+  ppr1: "Rd R5 R7 R4 R3 Rs"
   isis:
     name: pprlab
     type: level-1
