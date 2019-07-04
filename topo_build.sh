@@ -258,6 +258,10 @@ for node in ${global_nodes}; do
             if var_exists name=${isisIPv6Proc} ; then
                 echo " ipv6 router isis ${!isisIPv6Proc}" >> $frrconf
             fi
+            isisNet=${node}_if${ifnum}_isis_network
+            if var_exists name=${isisNet} ; then
+                echo " isis network ${!isisNet}" >> $frrconf
+            fi
             echo "!" >> $frrconf
             ifnum=`expr $ifnum + 1`
         done

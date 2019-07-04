@@ -55,12 +55,14 @@ Rs:
     ipv6: fc00:102::ff/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   if4:
     phy: ens4
     bridge: br103
     ipv6: fc00:103::ff/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   tunnelset1:
     mode: ip6ip6
     thisSide: Source
@@ -95,12 +97,14 @@ Rd:
     ipv6: fc00:122::d/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   if4:
     phy: ens4
     bridge: br121
     ipv6: fc00:121::d/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   tunnelset1:
     mode: ip6ip6
     thisSide: Dest
@@ -131,18 +135,21 @@ R1:
     ipv6: fc00:102::1/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   if3:
     phy: ens3
     bridge: br104
     ipv6: fc00:104::1/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   if4:
     phy: ens4
     bridge: br123
     ipv6: fc00:123::1/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   isis:
     name: pprlab
     type: level-1
@@ -160,18 +167,21 @@ R2:
     ipv6: fc00:113::2/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   if3:
     phy: ens3
     bridge: br116
     ipv6: fc00:116::2/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   if4:
     phy: ens4
     bridge: br122
     ipv6: fc00:122::2/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   isis:
     name: pprlab
     type: level-1
@@ -189,36 +199,42 @@ R3:
     ipv6: fc00:103::3/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   if3:
     phy: ens3
     bridge: br104
     ipv6: fc00:104::3/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   if4:
     phy: ens4
     bridge: br111
     ipv6: fc00:111::3/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   if5:
     phy: ens5
     bridge: br112
     ipv6: fc00:112::3/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   if6:
     phy: ens10
     bridge: br108
     ipv6: fc00:108::3/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   if7:
     phy: ens11
     bridge: br105
     ipv6: fc00:105::3/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   isis:
     name: pprlab
     type: level-1
@@ -236,42 +252,49 @@ R4:
     ipv6: fc00:123::4/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   if3:
     phy: ens3
     bridge: br113
     ipv6: fc00:113::4/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   if4:
     phy: ens4
     bridge: br114
     ipv6: fc00:114::4/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   if5:
     phy: ens5
     bridge: br115
     ipv6: fc00:115::4/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   if6:
     phy: ens10
     bridge: br110
     ipv6: fc00:110::4/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   if7:
     phy: ens11
     bridge: br111
     ipv6: fc00:111::4/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   if8:
     phy: ens12
     bridge: br112
     ipv6: fc00:112::4/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   isis:
     name: pprlab
     type: level-1
@@ -289,36 +312,42 @@ R5:
     ipv6: fc00:116::5/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   if3:
     phy: ens3
     bridge: br121
     ipv6: fc00:121::5/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   if4:
     phy: ens4
     bridge: br120
     ipv6: fc00:120::5/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   if5:
     phy: ens5
     bridge: br117
     ipv6: fc00:117::5/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   if6:
     phy: ens10
     bridge: br118
     ipv6: fc00:118::5/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   if7:
     phy: ens11
     bridge: br114
     ipv6: fc00:114::5/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   isis:
     name: pprlab
     type: level-1
@@ -336,24 +365,28 @@ R6:
     ipv6: fc00:108::6/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   if3:
     phy: ens3
     bridge: br110
     ipv6: fc00:110::6/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   if4:
     phy: ens4
     bridge: br109
     ipv6: fc00:109::6/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   if5:
     phy: ens5
     bridge: br106
     ipv6: fc00:106::6/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   isis:
     name: pprlab
     type: level-1
@@ -371,24 +404,28 @@ R7:
     ipv6: fc00:115::7/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   if3:
     phy: ens3
     bridge: br117
     ipv6: fc00:117::7/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   if4:
     phy: ens4
     bridge: br118
     ipv6: fc00:118::7/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   if5:
     phy: ens5
     bridge: br119
     ipv6: fc00:119::7/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   isis:
     name: pprlab
     type: level-1
@@ -406,18 +443,21 @@ Ra:
     ipv6: fc00:105::a/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   if3:
     phy: ens3
     bridge: br106
     ipv6: fc00:106::a/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   if4:
     phy: ens4
     bridge: br107
     ipv6: fc00:107::a/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   isis:
     name: pprlab
     type: level-1
@@ -435,12 +475,14 @@ Rb:
     ipv6: fc00:107::b/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   if3:
     phy: ens3
     bridge: br109
     ipv6: fc00:109::b/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   isis:
     name: pprlab
     type: level-1
@@ -458,12 +500,14 @@ Rc:
     ipv6: fc00:119::c/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   if3:
     phy: ens3
     bridge: br120
     ipv6: fc00:120::c/64
     isis:
       ipv6: pprlab
+      network: point-to-point
   isis:
     name: pprlab
     type: level-1
