@@ -11,7 +11,7 @@ MacPrefix="00:1C:44:"
 # Linux config files
 SysCtlFile="node-sysctl.conf"
 # FRR
-FRRpackage="frr_7.2-dev-20190628-00-g947fb4a43-0_amd64.deb"
+FRRpackage="frr_7.2-dev-20190706-01-g16ec8a7bd-0_amd64.deb"
 FRRdaemons="daemons"
 #
 #########################################
@@ -300,6 +300,7 @@ for node in ${global_nodes}; do
                         get_lo_v6addr ${step}
                         echo "  pde type ipv6-node ${ipv6Loopback}"  >> $frrconf
                     done
+                    echo "  exit" >> $frrconf
                 done
                 tunnelSetNum=`expr $tunnelSetNum + 1`            
             done
