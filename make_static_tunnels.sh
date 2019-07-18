@@ -51,12 +51,8 @@ make_tunnels() {
         for((i=1; i<=${numTunnels}; i++)) ; do
             dec=`expr $startTun + $i`
             hex=$(printf '%x' $dec)
-            if [ "$tunSide" = "Source" ] ; then
-                sdport=dport
-            else
-                sdport=sport
-            fi
-            ip6tables -t mangle -A PREROUTING -i ens2 -p udp --${sdport} `expr 10000 + $dec` -j MARK --set-mark 0x${hex}
+            ip6tables -t mangle -A PREROUTING -i ens2 -p udp --sport `expr 10000 + $dec` -j MARK --set-mark 0x${hex}
+            ip6tables -t mangle -A PREROUTING -i ens2 -p udp --dport `expr 10000 + $dec` -j MARK --set-mark 0x${hex}
             ip -6 rule add fwmark 0x${hex} lookup `expr 10000 + ${dec}`
             ip -6 route add default via ${tunNet}:${hex}::${tunRemoteSide} table `expr 10000 + ${dec}`
         done
