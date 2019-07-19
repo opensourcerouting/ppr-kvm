@@ -95,7 +95,7 @@ Rs:
       addrfamily: ipv6 vpn
     vrf1: 
       name: vrf-RED
-      1abel: 500
+      label: 500
       rd: 1:1
   ipv6static1:
     net: fc00:201::/48
@@ -152,7 +152,7 @@ Rd:
       addrfamily: ipv6 vpn
     vrf1: 
       name: vrf-RED
-      1abel: 500
+      label: 500
       rd: 1:1
   ipv6static1:
     net: fc00:202::/48
