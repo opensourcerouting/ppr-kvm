@@ -348,6 +348,37 @@ for node in ${global_nodes}; do
             done
         fi
         echo "!" >> $frrconf
+        # Now Add PPR config
+        tunnelSetNum=1
+        echo "ppr group PPRLAB" >> $frrconf
+        while var_exists name=${node}_tunnelset${tunnelSetNum}_count ; do
+            line=${node}_tunnelset${tunnelSetNum}
+            numTunnelsVar=${node}_tunnelset${tunnelSetNum}_count
+            startTunVar=${node}_tunnelset${tunnelSetNum}_start
+            tunModeVar=${node}_tunnelset${tunnelSetNum}_mode
+            tunSideVar=${node}_tunnelset${tunnelSetNum}_thisSide
+            tunNetVar=${node}_tunnelset${tunnelSetNum}_netPrefix
+            if [ "${!tunSideVar}" = "Dest" ] ; then
+                tunThisSideVar=${node}_tunnelset${tunnelSetNum}_dstPrefix
+                tunOtherSideVar=${node}_tunnelset${tunnelSetNum}_srcPrefix
+            else
+                tunThisSideVar=${node}_tunnelset${tunnelSetNum}_srcPrefix
+                tunOtherSideVar=${node}_tunnelset${tunnelSetNum}_dstPrefix
+            fi                    
+            for((i=1; i<=${!numTunnelsVar}; i++)) ; do
+                dec=`expr ${!startTunVar} + $i`
+                hex=$(printf '%x' $dec)
+                echo " ppr ipv6 ${!tunThisSideVar}::${hex}/128 prefix ${!tunOtherSideVar}::${hex}/128" >> $frrconf
+                pprVar=${node}_ppr${i}
+                for step in ${!pprVar}; do
+                    get_lo_v6addr ${step}
+                    echo "  pde ipv6-node ${ipv6Loopback}"  >> $frrconf
+                done
+                echo "  exit" >> $frrconf
+            done
+            tunnelSetNum=`expr $tunnelSetNum + 1`            
+        done
+        echo "!" >> $frrconf
         # Now Add Router ISIS config
         isisNameVar=${node}_isis_name
         isisTypeVar=${node}_isis_type
@@ -363,35 +394,9 @@ for node in ${global_nodes}; do
             if [ "${global_redistributeHostRoutes}" = "true" ]; then
                 echo " redistribute ipv6 static level-1" >> $frrconf
             fi
+            echo " topology ipv6-unicast" >> $frrconf
             echo " ppr on" >> $frrconf
-            tunnelSetNum=1
-            while var_exists name=${node}_tunnelset${tunnelSetNum}_count ; do
-                line=${node}_tunnelset${tunnelSetNum}
-                numTunnelsVar=${node}_tunnelset${tunnelSetNum}_count
-                startTunVar=${node}_tunnelset${tunnelSetNum}_start
-                tunModeVar=${node}_tunnelset${tunnelSetNum}_mode
-                tunSideVar=${node}_tunnelset${tunnelSetNum}_thisSide
-                tunNetVar=${node}_tunnelset${tunnelSetNum}_netPrefix
-                if [ "${!tunSideVar}" = "Dest" ] ; then
-                    tunThisSideVar=${node}_tunnelset${tunnelSetNum}_dstPrefix
-                    tunOtherSideVar=${node}_tunnelset${tunnelSetNum}_srcPrefix
-                else
-                    tunThisSideVar=${node}_tunnelset${tunnelSetNum}_srcPrefix
-                    tunOtherSideVar=${node}_tunnelset${tunnelSetNum}_dstPrefix
-                fi                    
-                for((i=1; i<=${!numTunnelsVar}; i++)) ; do
-                    dec=`expr ${!startTunVar} + $i`
-                    hex=$(printf '%x' $dec)
-                    echo " ppr ipv6 ${!tunThisSideVar}::${hex}/128 prefix ${!tunOtherSideVar}::${hex}/128" >> $frrconf
-                    pprVar=${node}_ppr${i}
-                    for step in ${!pprVar}; do
-                        get_lo_v6addr ${step}
-                        echo "  pde type ipv6-node ${ipv6Loopback}"  >> $frrconf
-                    done
-                    echo "  exit" >> $frrconf
-                done
-                tunnelSetNum=`expr $tunnelSetNum + 1`            
-            done
+            echo " ppr advertise PPRLAB" >> $frrconf
             echo "!" >> $frrconf
         fi
         # Finish config
