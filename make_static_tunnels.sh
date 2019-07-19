@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 #
+var_exists() { # check if variable is set at all
+    local "$@" # inject 'name' argument in local scope
+    &>/dev/null declare -p "$name" # return 0 when var is present
+}
+
 make_tunnels() {
     local "$@"
 
@@ -53,8 +58,13 @@ make_tunnels() {
             hex=$(printf '%x' $dec)
             ip6tables -t mangle -A PREROUTING -i ens2 -p udp --sport `expr 10000 + $dec` -j MARK --set-mark 0x${hex}
             ip6tables -t mangle -A PREROUTING -i ens2 -p udp --dport `expr 10000 + $dec` -j MARK --set-mark 0x${hex}
-            ip -6 rule add fwmark 0x${hex} lookup `expr 10000 + ${dec}`
-            ip -6 route add default via ${tunNet}:${hex}::${tunRemoteSide} table `expr 10000 + ${dec}`
+            if var_exists name=ifVRF ; then
+                ip -6 rule add fwmark 0x${hex} iif ${ifVRF} lookup `expr 10000 + ${dec}`
+                ip -6 route add default via ${tunNet}:${hex}::${tunRemoteSide} encap mpls 500 table `expr 10000 + ${dec}`
+            else
+                ip -6 rule add fwmark 0x${hex} lookup `expr 10000 + ${dec}`
+                ip -6 route add default via ${tunNet}:${hex}::${tunRemoteSide} table `expr 10000 + ${dec}`
+            fi
         done
     fi
 }
@@ -67,4 +77,5 @@ make_tunnels() {
 # tunSource=fc00:1000::
 # tunDest=fc00:2000::
 # tunNet=fc00:ffff:
+# ifVRF=vrf-RED
 #

@@ -113,6 +113,10 @@ for node in ${global_nodes}; do
     echo "Processing node $node"
     nodeNr=`expr ${nodeNr} + 1`
     #
+    # By default, no BGP or ISIS protocol daemon
+    daemon_isisd="no"
+    daemon_bgpd="no"
+    #
     # Creating bridges as needed
     ifnum=1
     while var_exists name=${node}_if${ifnum}_phy ; do
@@ -169,11 +173,24 @@ for node in ${global_nodes}; do
             phy=${node}_if${ifnum}_phy
             if var_exists name=${bridgeVar} ; then
                 phy=${node}_if${ifnum}_phy
-                echo "# Interface ${ifnum}, connected to bridge ${!bridgeVar}" >> $iffile
+                vrfVar=${node}_if${ifnum}_vrf
+                if var_exists name=${vrfVar} ; then
+                    echo "# Interface ${ifnum} - VRF ${!vrfVar}, connected to bridge ${!bridgeVar}" >> $iffile
+                else
+                    echo "# Interface ${ifnum}, connected to bridge ${!bridgeVar}" >> $iffile
+                fi
                 echo "auto ${!phy}" >> $iffile
                 echo "iface ${!phy} inet manual" >> $iffile
                 echo "  up ip link set \$IFACE up" >> $iffile
+                if var_exists name=${vrfVar} ; then
+                    echo "  up ip link add name ${!vrfVar} type vrf table `expr 10 + ${ifnum}`" >> $iffile
+                    echo "  up ip link set ${!vrfVar} up" >> $iffile
+                    echo "  up ip link set \$IFACE master ${!vrfVar}" >> $iffile
+                fi
                 echo "  down ip link set \$IFACE down" >> $iffile
+                if var_exists name=${vrfVar} ; then
+                    echo "  down ip link delete name ${!vrfVar}" >> $iffile
+                fi
                 echo "iface ${!phy} inet6 manual" >> $iffile
                 echo "#" >> $iffile
             elif var_exists name=${tunnelVar} ; then
@@ -210,10 +227,6 @@ for node in ${global_nodes}; do
         #
         # /etc/frr/frr.conf
         #
-        isisNameVar=${node}_isis_name
-        isisTypeVar=${node}_isis_type
-        isisAreaVar=${node}_isis_area
-        #
         # Config header first
         frrconf=/tmp/node-frrconf-$$
         echo "# FRR Config for node ${node}" > $frrconf
@@ -224,13 +237,35 @@ for node in ${global_nodes}; do
         echo "!" >> $frrconf
         echo "debug isis ppr" >> $frrconf
         echo "!" >> $frrconf
+        # Now Add Static Router config
+        staticnum=1
+        while var_exists name=${node}_ipv6static${staticnum}_net ; do
+            netvar=${node}_ipv6static${staticnum}_net
+            destvar=${node}_ipv6static${staticnum}_dest
+            distancevar=${node}_ipv6static${staticnum}_distance
+            if var_exists name=${node}_ipv6static${staticnum}_vrf ; then
+                vrfvar=${node}_ipv6static${staticnum}_vrf
+                echo "vrf ${!vrfvar}" >> $frrconf
+                echo " ipv6 route ${!netvar} ${!destvar} ${!distancevar}" >> $frrconf
+                echo " exit-vrf" >> $frrconf
+            else
+                echo "ipv6 route ${!netvar} ${!destvar} ${!distancevar}" >> $frrconf
+            fi
+            staticnum=`expr $staticnum + 1`
+        done
+        echo "!" >> $frrconf
         # interface config next
         ifnum=1
         while var_exists name=${node}_if${ifnum}_phy ; do
             bridgeVar=${node}_if${ifnum}_bridge
             ipv6TunnelVar=${node}_if${ifnum}_ipv6tunnel
             phy=${node}_if${ifnum}_phy
-            echo "interface ${!phy}" >> $frrconf
+            if var_exists name=${node}_if${ifnum}_vrf ; then
+                vrfvar=${node}_if${ifnum}_vrf
+                echo "interface ${!phy} vrf ${!vrfvar}" >> $frrconf
+            else
+                echo "interface ${!phy}" >> $frrconf
+            fi
             if var_exists name=${bridgeVar} ; then
                 echo " description Connected to KVM bridge ${!bridgeVar}" >> $frrconf
             elif var_exists name=${ipv6TunnelVar} ; then
@@ -265,8 +300,61 @@ for node in ${global_nodes}; do
             echo "!" >> $frrconf
             ifnum=`expr $ifnum + 1`
         done
+        # Now Add Route BGP config
+        if var_exists name=${node}_bgp_as ; then
+            daemon_bgpd="yes"
+            bgpASVar=${node}_bgp_as
+            echo "router bgp ${!bgpASVar}" >> $frrconf
+            routerIDVar=${node}_bgp_id
+            echo " bgp router-id ${!routerIDVar}" >> $frrconf
+            neighborCount=1
+            while var_exists name=${node}_bgp_neighbor${neighborCount}_as ; do
+                neighborASvar=${node}_bgp_neighbor${neighborCount}_as
+                neighborIPvar=${node}_bgp_neighbor${neighborCount}_ip
+                echo " neighbor ${!neighborIPvar} remote-as ${!neighborASvar}" >> $frrconf
+                echo " neighbor ${!neighborIPvar} update-source lo" >> $frrconf
+                neighborCount=`expr $neighborCount + 1`
+            done
+            echo "!" >> $frrconf
+            neighborCount=1
+            while var_exists name=${node}_bgp_neighbor${neighborCount}_as ; do
+                neighborAddrFamVar=${node}_bgp_neighbor${neighborCount}_addrfamily
+                if var_exists name=${neighborAddrFamVar} ; then
+                    neighborIPvar=${node}_bgp_neighbor${neighborCount}_ip
+                    echo " address-family ${!neighborAddrFamVar}" >> $frrconf
+                    echo "  neighbor ${!neighborIPvar} activate" >> $frrconf
+                    echo " exit-address-family" >> $frrconf
+                fi
+                neighborCount=`expr $neighborCount + 1`
+            done
+            echo "!" >> $frrconf
+            vrfCount=1
+            while var_exists name=${node}_bgp_vrf${vrfCount}_name ; do
+                vrfNameVar=${node}_bgp_vrf${vrfCount}_name
+                vrfLabelVar=${node}_bgp_vrf${vrfCount}_label
+                vrfRDVar=${node}_bgp_vrf${vrfCount}_rd
+                echo "router bgp ${!bgpASVar} vrf ${!vrfNameVar}" >> $frrconf
+                echo " !" >> $frrconf
+                echo " address-family ipv6 unicast" >> $frrconf
+                echo "  redistribute static" >> $frrconf
+                echo "  label vpn export ${!vrfLabelVar}" >> $frrconf
+                echo "  rd vpn export ${!vrfRDVar}" >> $frrconf
+                echo "  rt vpn both ${!vrfRDVar}" >> $frrconf
+                echo "  export vpn" >> $frrconf
+                echo "  import vpn" >> $frrconf
+                echo " exit-address-family" >> $frrconf
+                echo "!" >> $frrconf
+                vrfCount=`expr $vrfCount + 1`
+            done
+        fi
+        echo "!" >> $frrconf
         # Now Add Router ISIS config
+        isisNameVar=${node}_isis_name
+        isisTypeVar=${node}_isis_type
+        isisAreaVar=${node}_isis_area
         if var_exists name=${isisNameVar} ; then
+            daemon_isisd="yes"
+            #
             echo "router isis ${!isisNameVar}" >> $frrconf
             if var_exists name=${isisTypeVar} ; then
                 echo " is-type ${!isisTypeVar}" >> $frrconf
@@ -306,16 +394,6 @@ for node in ${global_nodes}; do
             done
             echo "!" >> $frrconf
         fi
-        # Now Add Static Router config
-        staticnum=1
-        while var_exists name=${node}_ipv6static${staticnum}_net ; do
-            netvar=${node}_ipv6static${staticnum}_net
-            destvar=${node}_ipv6static${staticnum}_dest
-            distancevar=${node}_ipv6static${staticnum}_distance
-            echo "ipv6 route ${!netvar} ${!destvar} ${!distancevar}" >> $frrconf
-            staticnum=`expr $staticnum + 1`
-        done
-        echo "!" >> $frrconf
         # Finish config
         echo "line vty" >> $frrconf
         echo "!" >> $frrconf
@@ -338,21 +416,21 @@ for node in ${global_nodes}; do
         echo "chown frr:frr /etc/frr/vtysh.conf" >> $frrinstall
         echo "rm -f /root/${FRRpackage}" >> $frrinstall
         #
-        # /etc/runboot.d
-        startnum=1
-        bootupfile=/tmp/startup-$$
-        echo "#!/usr/bin/env bash" > $bootupfile
-        echo "#" >> $bootupfile
-        while var_exists name=${node}_start${startnum} ; do
-            line=${node}_start${startnum}
-            echo "${!line}" >> $bootupfile
-            startnum=`expr $startnum + 1`            
-        done
-        #
-        # /etc/runboot.d/10_tunnels.sh
+        # /etc/runboot.d/20_make_tunnels.sh
         tunnelSetNum=1
         tunnelcfgfile=/tmp/tunnel-config-$$
         cp ${Script_Dir}/make_static_tunnels.sh $tunnelcfgfile
+        # Look for a VRF in config - only support 1 VRF right now (first one)
+        unset ifVRF
+        ifnum=1
+        while var_exists name=${node}_if${ifnum}_phy ; do
+            vrfVar=${node}_if${ifnum}_vrf
+            if var_exists name=${vrfVar} ; then
+                ifVRF=${!vrfVar}
+                break
+            fi
+            ifnum=`expr $ifnum + 1`
+        done
         echo "#" >> $tunnelcfgfile
         while var_exists name=${node}_tunnelset${tunnelSetNum}_count ; do
             line=${node}_tunnelset${tunnelSetNum}
@@ -366,9 +444,19 @@ for node in ${global_nodes}; do
             tunSourceVar=${node}_tunnelset${tunnelSetNum}_srcPrefix
             tunDestVar=${node}_tunnelset${tunnelSetNum}_dstPrefix
             tunNetVar=${node}_tunnelset${tunnelSetNum}_netPrefix
-            echo "make_tunnels startTun=${!startTunVar} numTunnels=${!numTunnelsVar} tunSide=${!tunSideVar} tunMode=${!tunModeVar} tunSource=${!tunSourceVar} tunDest=${!tunDestVar} tunNet=${!tunNetVar}"  >> $tunnelcfgfile
+            if var_exists name=ifVRF ; then
+                echo "make_tunnels startTun=${!startTunVar} numTunnels=${!numTunnelsVar} tunSide=${!tunSideVar} tunMode=${!tunModeVar} tunSource=${!tunSourceVar} tunDest=${!tunDestVar} tunNet=${!tunNetVar} ifVRF=${ifVRF}"  >> $tunnelcfgfile
+            else
+                echo "make_tunnels startTun=${!startTunVar} numTunnels=${!numTunnelsVar} tunSide=${!tunSideVar} tunMode=${!tunModeVar} tunSource=${!tunSourceVar} tunDest=${!tunDestVar} tunNet=${!tunNetVar}"  >> $tunnelcfgfile
+            fi
             tunnelSetNum=`expr $tunnelSetNum + 1`            
         done
+        #
+        # /etc/frr/daemons file
+        daemoncfgfile=/tmp/daemons-$$
+        cp ${Script_Dir}/frr/${FRRdaemons} ${daemoncfgfile}
+        sed -i "s/isisd=.*/isisd=${daemon_isisd}/g" ${daemoncfgfile}
+        sed -i "s/bgpd=.*/bgpd=${daemon_bgpd}/g" ${daemoncfgfile}
         #
         # Files prepared, now add them to new VM disks
         echo "   ${node}: Updating VM disk with configuration"
@@ -378,12 +466,13 @@ for node in ${global_nodes}; do
             upload $iffile /etc/network/interfaces : \
             upload $hostnamefile /etc/hostname : \
             upload $hostfile /etc/hosts : \
+            upload ${Script_Dir}/modules.conf /etc/modules-load.d/modules.conf : \
             upload ${Script_Dir}/$SysCtlFile /etc/sysctl.d/99-sysctl.conf : \
             upload ${Script_Dir}/frr/${FRRpackage} /root/${FRRpackage} : \
             mkdir /etc/frr : \
             upload $frrconf /etc/frr/frr.conf : \
             upload $vtyshconf /etc/frr/vtysh.conf : \
-            upload ${Script_Dir}/frr/${FRRdaemons} /etc/frr/daemons : \
+            upload ${daemoncfgfile} /etc/frr/daemons : \
             upload $frrinstall /etc/runonce.d/80_frr_install.sh : \
             upload $tunnelcfgfile /etc/runboot.d/20_make_tunnels.sh
 
@@ -394,6 +483,7 @@ for node in ${global_nodes}; do
         rm $vtyshconf
         rm $frrinstall
         rm $tunnelcfgfile
+        rm $daemoncfgfile
     fi
     virsh start $node 2> /dev/null
 done

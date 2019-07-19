@@ -1,0 +1,561 @@
+# PPR Topology Test
+# All VM topology - 3 PPR Tunnels
+#
+
+global:
+  nodes: "R1 R2 R3 R4 R5 R6 R7 Ra Rb Rc Rs Rd CE1 CE2"
+  phyif: "ext1 ext2"
+
+  # If redistributeHostRoutes is set to true, then the host routes
+  #   are redistributed into ISIS and any traffic not matching a PPR
+  #   rule will use the default best path
+  # If it's set to false, then any traffic not matching PPR rules is
+  # dropped.
+  redistributeHostRoutes: false
+
+
+CE1:
+  if1:
+    phy: lo
+  if2:
+    phy: ens2
+    bridge: br100
+    ipv6: fc00:100::ce1/64
+  if3:
+    phy: ens3
+    bridge: br201
+    ipv6: fc00:201::ce1/64
+  ipv6static1:
+    net: ::/0
+    dest: fc00:100::ff
+    distance: 100
+
+CE2:
+  if1:
+    phy: lo
+  if2:
+    phy: ens2
+    bridge: br101
+    ipv6: fc00:101::ce2/64
+  if3:
+    phy: ens3
+    bridge: br202
+    ipv6: fc00:202::ce2/64
+  ipv6static1:
+    net: ::/0
+    dest: fc00:101::d
+    distance: 100
+
+Rs:
+  if1:
+    phy: lo
+    ipv6: fc00::ff/128
+    isis:
+      ipv6: pprlab
+  if2:
+    vrf: vrf-RED
+    phy: ens2
+    bridge: br100
+    ipv6: fc00:100::ff/64
+  if3:
+    phy: ens3
+    bridge: br102
+    ipv6: fc00:102::ff/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  if4:
+    phy: ens4
+    bridge: br103
+    ipv6: fc00:103::ff/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  tunnelset1:
+    mode: ip6gre
+    thisSide: Source
+    count: 3
+    start: 0
+    srcPrefix: fc00:1000
+    dstPrefix: fc00:2000
+    netPrefix: fc00:ffff
+  ppr1: "Rd R5 R7 R4 R3 Rs"
+  ppr2: "Rd R2 R4 R6 R3 Rs"
+  ppr3: "Rd R5 R4 R3 Rs"
+  isis:
+    name: pprlab
+    type: level-1
+    area: 49.1111.0000.1999.00
+  bgp:
+    as: 65000
+    id: 1.1.1.1
+    neighbor1:
+      ip: fc00::d
+      as: 65000
+      addrfamily: ipv6 vpn
+    vrf1: 
+      name: vrf-RED
+      1abel: 500
+      rd: 1:1
+  ipv6static1:
+    net: fc00:201::/48
+    dest: fc00:100::ce1
+    distance: 100
+    vrf: vrf-RED
+
+Rd:
+  if1:
+    phy: lo
+    ipv6: "fc00::d/128"
+    isis:
+      ipv6: pprlab
+  if2:
+    vrf: vrf-RED
+    phy: ens2
+    bridge: br101
+    ipv6: fc00:101::d/64
+  if3:
+    phy: ens3
+    bridge: br122
+    ipv6: fc00:122::d/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  if4:
+    phy: ens4
+    bridge: br121
+    ipv6: fc00:121::d/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  tunnelset1:
+    mode: ip6gre
+    thisSide: Dest
+    count: 3
+    start: 0
+    srcPrefix: fc00:1000
+    dstPrefix: fc00:2000
+    netPrefix: fc00:ffff
+  ppr1: "Rs R3 R4 R7 R5 Rd"
+  ppr2: "Rs R3 R6 R4 R2 Rd"
+  ppr3: "Rs R3 R4 R5 Rd"
+  isis:
+    name: pprlab
+    type: level-1
+    area: 49.1111.0000.1004.00
+  bgp:
+    as: 65000
+    id: 2.2.2.2
+    neighbor1:
+      ip: fc00::99
+      as: 65000
+      addrfamily: ipv6 vpn
+    vrf1: 
+      name: vrf-RED
+      1abel: 500
+      rd: 1:1
+  ipv6static1:
+    net: fc00:202::/48
+    dest: fc00:101::ce2
+    distance: 100
+    vrf: vrf-RED
+
+
+R1:
+  if1:
+    phy: lo
+    ipv6: fc00::1/128
+    isis:
+      ipv6: pprlab
+  if2:
+    phy: ens2
+    bridge: br102
+    ipv6: fc00:102::1/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  if3:
+    phy: ens3
+    bridge: br104
+    ipv6: fc00:104::1/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  if4:
+    phy: ens4
+    bridge: br123
+    ipv6: fc00:123::1/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  isis:
+    name: pprlab
+    type: level-1
+    area: 49.1111.0000.0001.00
+
+R2:
+  if1:
+    phy: lo
+    ipv6: fc00::2/128
+    isis:
+      ipv6: pprlab
+  if2:
+    phy: ens2
+    bridge: br113
+    ipv6: fc00:113::2/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  if3:
+    phy: ens3
+    bridge: br116
+    ipv6: fc00:116::2/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  if4:
+    phy: ens4
+    bridge: br122
+    ipv6: fc00:122::2/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  isis:
+    name: pprlab
+    type: level-1
+    area: 49.1111.0000.0002.00
+
+R3:
+  if1:
+    phy: lo
+    ipv6: fc00::3/128
+    isis:
+      ipv6: pprlab
+  if2:
+    phy: ens2
+    bridge: br103
+    ipv6: fc00:103::3/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  if3:
+    phy: ens3
+    bridge: br104
+    ipv6: fc00:104::3/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  if4:
+    phy: ens4
+    bridge: br111
+    ipv6: fc00:111::3/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  if5:
+    phy: ens5
+    bridge: br112
+    ipv6: fc00:112::3/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  if6:
+    phy: ens10
+    bridge: br108
+    ipv6: fc00:108::3/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  if7:
+    phy: ens11
+    bridge: br105
+    ipv6: fc00:105::3/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  isis:
+    name: pprlab
+    type: level-1
+    area: 49.1111.0000.0003.00
+
+R4:
+  if1:
+    phy: lo
+    ipv6: fc00::4/128
+    isis:
+      ipv6: pprlab
+  if2:
+    phy: ens2
+    bridge: br123
+    ipv6: fc00:123::4/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  if3:
+    phy: ens3
+    bridge: br113
+    ipv6: fc00:113::4/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  if4:
+    phy: ens4
+    bridge: br114
+    ipv6: fc00:114::4/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  if5:
+    phy: ens5
+    bridge: br115
+    ipv6: fc00:115::4/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  if6:
+    phy: ens10
+    bridge: br110
+    ipv6: fc00:110::4/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  if7:
+    phy: ens11
+    bridge: br111
+    ipv6: fc00:111::4/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  if8:
+    phy: ens12
+    bridge: br112
+    ipv6: fc00:112::4/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  isis:
+    name: pprlab
+    type: level-1
+    area: 49.1111.0000.0004.00
+
+R5:
+  if1:
+    phy: lo
+    ipv6: fc00::5/128
+    isis:
+      ipv6: pprlab
+  if2:
+    phy: ens2
+    bridge: br116
+    ipv6: fc00:116::5/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  if3:
+    phy: ens3
+    bridge: br121
+    ipv6: fc00:121::5/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  if4:
+    phy: ens4
+    bridge: br120
+    ipv6: fc00:120::5/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  if5:
+    phy: ens5
+    bridge: br117
+    ipv6: fc00:117::5/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  if6:
+    phy: ens10
+    bridge: br118
+    ipv6: fc00:118::5/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  if7:
+    phy: ens11
+    bridge: br114
+    ipv6: fc00:114::5/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  isis:
+    name: pprlab
+    type: level-1
+    area: 49.1111.0000.0005.00
+
+R6:
+  if1:
+    phy: lo
+    ipv6: fc00::6/128
+    isis:
+      ipv6: pprlab
+  if2:
+    phy: ens2
+    bridge: br108
+    ipv6: fc00:108::6/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  if3:
+    phy: ens3
+    bridge: br110
+    ipv6: fc00:110::6/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  if4:
+    phy: ens4
+    bridge: br109
+    ipv6: fc00:109::6/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  if5:
+    phy: ens5
+    bridge: br106
+    ipv6: fc00:106::6/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  isis:
+    name: pprlab
+    type: level-1
+    area: 49.1111.0000.0006.00
+
+R7:
+  if1:
+    phy: lo
+    ipv6: fc00::7/128
+    isis:
+      ipv6: pprlab
+  if2:
+    phy: ens2
+    bridge: br115
+    ipv6: fc00:115::7/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  if3:
+    phy: ens3
+    bridge: br117
+    ipv6: fc00:117::7/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  if4:
+    phy: ens4
+    bridge: br118
+    ipv6: fc00:118::7/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  if5:
+    phy: ens5
+    bridge: br119
+    ipv6: fc00:119::7/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  isis:
+    name: pprlab
+    type: level-1
+    area: 49.1111.0000.0007.00
+
+Ra:
+  if1:
+    phy: lo
+    ipv6: fc00::a/128
+    isis:
+      ipv6: pprlab
+  if2:
+    phy: ens2
+    bridge: br105
+    ipv6: fc00:105::a/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  if3:
+    phy: ens3
+    bridge: br106
+    ipv6: fc00:106::a/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  if4:
+    phy: ens4
+    bridge: br107
+    ipv6: fc00:107::a/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  isis:
+    name: pprlab
+    type: level-1
+    area: 49.1111.0000.1001.00
+
+Rb:
+  if1:
+    phy: lo
+    ipv6: fc00::b/128
+    isis:
+      ipv6: pprlab
+  if2:
+    phy: ens2
+    bridge: br107
+    ipv6: fc00:107::b/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  if3:
+    phy: ens3
+    bridge: br109
+    ipv6: fc00:109::b/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  isis:
+    name: pprlab
+    type: level-1
+    area: 49.1111.0000.1002.00
+
+Rc:
+  if1:
+    phy: lo
+    ipv6: fc00::c/128
+    isis:
+      ipv6: pprlab
+  if2:
+    phy: ens2
+    bridge: br119
+    ipv6: fc00:119::c/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  if3:
+    phy: ens3
+    bridge: br120
+    ipv6: fc00:120::c/64
+    isis:
+      ipv6: pprlab
+      network: point-to-point
+  isis:
+    name: pprlab
+    type: level-1
+    area: 49.1111.0000.1003.00
+
+ext1:
+  bridge: br201
+  phy: ens1f0
+
+ext2: 
+  bridge: br202
+  phy: ens1f1
+
