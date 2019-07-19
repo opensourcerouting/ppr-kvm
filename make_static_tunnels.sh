@@ -52,16 +52,19 @@ make_tunnels() {
         #
         # Add ip6tables rule and routing table
         #
-        ip6tables -t mangle -A PREROUTING -i ens2 -p ipv6-icmp -j MARK --set-mark 0x1
+        # ip6tables -t mangle -A PREROUTING -i ens2 -p ipv6-icmp -j MARK --set-mark 0x1
+        ip6tables -t mangle -A PREROUTING -p ipv6-icmp -j MARK --set-mark 0x1
         for((i=1; i<=${numTunnels}; i++)) ; do
             dec=`expr $startTun + $i`
             hex=$(printf '%x' $dec)
-            ip6tables -t mangle -A PREROUTING -i ens2 -p udp --sport `expr 10000 + $dec` -j MARK --set-mark 0x${hex}
-            ip6tables -t mangle -A PREROUTING -i ens2 -p udp --dport `expr 10000 + $dec` -j MARK --set-mark 0x${hex}
             if var_exists name=ifVRF ; then
-                ip -6 rule add fwmark 0x${hex} iif ${ifVRF} lookup `expr 10000 + ${dec}`
+                ip6tables -t mangle -A PREROUTING -i ${ifVRF} -p udp --sport `expr 10000 + $dec` -j MARK --set-mark 0x${hex}
+                ip6tables -t mangle -A PREROUTING -i ${ifVRF} -p udp --dport `expr 10000 + $dec` -j MARK --set-mark 0x${hex}
+                ip -6 rule add fwmark 0x${hex} lookup `expr 10000 + ${dec}`
                 ip -6 route add default via ${tunNet}:${hex}::${tunRemoteSide} encap mpls 500 table `expr 10000 + ${dec}`
             else
+                ip6tables -t mangle -A PREROUTING -i ens2 -p udp --sport `expr 10000 + $dec` -j MARK --set-mark 0x${hex}
+                ip6tables -t mangle -A PREROUTING -i ens2 -p udp --dport `expr 10000 + $dec` -j MARK --set-mark 0x${hex}
                 ip -6 rule add fwmark 0x${hex} lookup `expr 10000 + ${dec}`
                 ip -6 route add default via ${tunNet}:${hex}::${tunRemoteSide} table `expr 10000 + ${dec}`
             fi
