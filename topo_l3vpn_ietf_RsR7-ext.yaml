@@ -4,7 +4,7 @@
 
 global:
   nodes: "R1 R2 R3 R4 R5 R6 R7 Ra Rb Rc Rs Rd CE1 CE2"
-  phyif: "ext1 ext2 ext3 ext4 ext_br100 ext_br102 ext_br103 ext_br115 ext_br117 ext_br118 ext_br119"
+  phyif: "ext1 ext2 ext3 ext4 ext_br100 ext_br102 ext_br103 ext_br115 ext_br117 ext_br118 ext_br119 ext_br111 ext_br1111 ext_br112 ext_br1112"
 
   # If redistributeHostRoutes is set to true, then the host routes
   #   are redistributed into ISIS and any traffic not matching a PPR
@@ -323,14 +323,14 @@ R4:
       network: point-to-point
   if7:
     phy: ens11
-    bridge: br111
+    bridge: br1111
     ipv6: fc00:111::4/64
     isis:
       ipv6: pprlab
       network: point-to-point
   if8:
     phy: ens12
-    bridge: br112
+    bridge: br1112
     ipv6: fc00:112::4/64
     isis:
       ipv6: pprlab
@@ -598,3 +598,19 @@ ext_br118:
 ext_br119:
   bridge: br119
   phy: enp7s0f3
+
+ext_br111:
+  bridge: br111
+  phy: enp2s0f0
+
+ext_br1111:
+  bridge: br1111
+  phy: enp3s0f0
+
+ext_br112:
+  bridge: br112
+  phy: enp2s0f1
+
+ext_br1112:
+  bridge: br1112
+  phy: enp3s0f1
