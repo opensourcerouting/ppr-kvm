@@ -84,6 +84,14 @@ function get_lo_v6addr {
     done
 }
 
+function get_if_v6addr {
+    local inpStr=$1
+
+    if var_exists name=${inpStr}_ipv6 ; then
+        ipv6AddrVar=${inpStr}_ipv6
+        ipv6Addr=${!ipv6AddrVar}
+    fi
+}
 
 var_exists() { # check if variable is set at all
     local "$@" # inject 'name' argument in local scope
@@ -409,8 +417,13 @@ for node in ${global_nodes}; do
                 echo " ppr ipv6 ${!tunThisSideVar}::${hex}/128 prefix ${!tunOtherSideVar}::${hex}/128" >> $frrconf
                 pprVar=${node}_ppr${i}
                 for step in ${!pprVar}; do
-                    get_lo_v6addr ${step}
-                    echo "  pde ipv6-node ${ipv6Loopback}"  >> $frrconf
+                    if [[ $step =~ "_" ]] ; then
+                        get_if_v6addr ${step}
+                        echo "  pde ipv6-interface ${ipv6Addr}"  >> $frrconf
+                    else
+                        get_lo_v6addr ${step}
+                        echo "  pde ipv6-node ${ipv6Loopback}"  >> $frrconf
+                    fi
                 done
                 echo "  exit" >> $frrconf
             done
