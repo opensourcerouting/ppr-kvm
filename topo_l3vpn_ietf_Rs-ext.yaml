@@ -440,7 +440,7 @@ R5:
       network: point-to-point
   if7:
     phy: ens11
-    bridge: br114
+    bridge: br1114
     ipv6: fc00:114::5/64
     isis:
       ipv6: pprlab
