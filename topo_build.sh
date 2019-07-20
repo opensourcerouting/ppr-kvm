@@ -110,54 +110,78 @@ eval $(parse_yaml ${YAML_Configfile})
 #
 nodeNr=0
 for node in ${global_nodes}; do
-    echo "Processing node $node"
     nodeNr=`expr ${nodeNr} + 1`
+    #
+    # Check for external node
+    nodeExtern=false
+    if var_exists name=${node}_external ; then
+        echo "AAAAAA"
+        ext_name=${node}_external
+        nodeExtern=${!extVar}
+    fi
+    if $nodeExtern ; then
+        echo "Processing physical node $node"
+    else
+        echo "Processing virtual node $node"
+    fi
     #
     # By default, no BGP or ISIS protocol daemon
     daemon_isisd="no"
     daemon_bgpd="no"
     #
-    # Creating bridges as needed
-    ifnum=1
-    while var_exists name=${node}_if${ifnum}_phy ; do
-        if=${node}_if${ifnum}_bridge
-        if var_exists name=${if} ; then
-            bridge=${!if}
-            BridgeFound=`grep "${bridge}:" /proc/net/dev`
-            if ! [ -n "${BridgeFound}" ] ; then
-                echo "   $node: interface if$ifnum - Creating Bridge ${bridge}"
-                sudo brctl addbr ${bridge} 2> /dev/null
-            fi
-            sudo ip link set ${bridge} up
-            #
-        fi
-        ifnum=`expr $ifnum + 1`
-    done
-    #
-    if [ "`virsh list --all | grep \ $node\ `" = "" ]; then
-        sudo sh -c "pv -B 500M ${VM_Template_disk} > ${VM_storage_dir}/${node}_disk.qcow2"
-        node_xml="/tmp/node_$node.xml"
-        cp ${Script_Dir}/node-template-${HostSystem}.xml $node_xml
-        sed -i "s|__TEMPLATENAME__|$node|g" $node_xml
-        sed -i "s|__TEMPLATEDISK__|${VM_storage_dir}/${node}_disk.qcow2|g" $node_xml
-        virsh define $node_xml
-        rm -rf $node_xml
-        # Node defined, now add interfaces
+    if ! $nodeExtern ; then
+        # Creating bridges as needed
         ifnum=1
         while var_exists name=${node}_if${ifnum}_phy ; do
-            bridgeVar=${node}_if${ifnum}_bridge
-            if var_exists name=${bridgeVar} ; then
-                nodeNrHigh=`expr ${nodeNr} / 256`
-                nodeNrLow=`expr ${nodeNr} % 256`
-                macaddr=${MacPrefix}`printf "%02x\n" ${nodeNrHigh}`:`printf "%02x\n" ${nodeNrLow}`:`printf "%02x\n" $ifnum`
-                echo "   ${node}: Adding Interface $ifnum with MAC $macaddr, connected to ${!bridgeVar}"
-                virsh attach-interface $node --model virtio \
-                    --type bridge --source ${!bridgeVar} --mac $macaddr --persistent
+            if=${node}_if${ifnum}_bridge
+            if var_exists name=${if} ; then
+                bridge=${!if}
+                BridgeFound=`grep "${bridge}:" /proc/net/dev`
+                if ! [ -n "${BridgeFound}" ] ; then
+                    echo "   $node: interface if$ifnum - Creating Bridge ${bridge}"
+                    sudo brctl addbr ${bridge} 2> /dev/null
+                fi
+                sudo ip link set ${bridge} up
                 #
             fi
             ifnum=`expr $ifnum + 1`
         done
-        # Interfaces added. Now adjust VM config
+    fi
+    #
+    if [ "`virsh list --all | grep \ $node\ `" = "" ]; then
+        if ! $nodeExtern ; then
+            sudo sh -c "pv -B 500M ${VM_Template_disk} > ${VM_storage_dir}/${node}_disk.qcow2"
+            node_xml="/tmp/node_$node.xml"
+            cp ${Script_Dir}/node-template-${HostSystem}.xml $node_xml
+            sed -i "s|__TEMPLATENAME__|$node|g" $node_xml
+            sed -i "s|__TEMPLATEDISK__|${VM_storage_dir}/${node}_disk.qcow2|g" $node_xml
+            virsh define $node_xml
+            rm -rf $node_xml
+            # Node defined, now add interfaces
+            ifnum=1
+            while var_exists name=${node}_if${ifnum}_phy ; do
+                bridgeVar=${node}_if${ifnum}_bridge
+                if var_exists name=${bridgeVar} ; then
+                    nodeNrHigh=`expr ${nodeNr} / 256`
+                    nodeNrLow=`expr ${nodeNr} % 256`
+                    macaddr=${MacPrefix}`printf "%02x\n" ${nodeNrHigh}`:`printf "%02x\n" ${nodeNrLow}`:`printf "%02x\n" $ifnum`
+                    echo "   ${node}: Adding Interface $ifnum with MAC $macaddr, connected to ${!bridgeVar}"
+                    virsh attach-interface $node --model virtio \
+                        --type bridge --source ${!bridgeVar} --mac $macaddr --persistent
+                    #
+                fi
+                ifnum=`expr $ifnum + 1`
+            done
+            if var_exists name=${node}_dhcpif ; then
+                nodeNrHigh=`expr ${nodeNr} / 256`
+                nodeNrLow=`expr ${nodeNr} % 256`
+                macaddr=${MacPrefix}`printf "%02x\n" ${nodeNrHigh}`:`printf "%02x\n" ${nodeNrLow}`:`printf "%02x\n" $ifnum`
+                echo "   ${node}: Adding DHCP Interface $ifnum with MAC $macaddr, connected to virbr0"
+                virsh attach-interface $node --model virtio \
+                    --type bridge --source virbr0 --mac $macaddr --persistent
+            fi
+        fi
+        # Interfaces added. Now adjust node config
         # 
         # Hostname
         # /etc/hostname
@@ -174,10 +198,18 @@ for node in ${global_nodes}; do
             if var_exists name=${bridgeVar} ; then
                 phy=${node}_if${ifnum}_phy
                 vrfVar=${node}_if${ifnum}_vrf
-                if var_exists name=${vrfVar} ; then
-                    echo "# Interface ${ifnum} - VRF ${!vrfVar}, connected to bridge ${!bridgeVar}" >> $iffile
+                if $nodeExtern ; then
+                    if var_exists name=${vrfVar} ; then
+                        echo "# Interface ${ifnum} - VRF ${!vrfVar}" >> $iffile
+                    else
+                        echo "# Interface ${ifnum}" >> $iffile
+                    fi
                 else
-                    echo "# Interface ${ifnum}, connected to bridge ${!bridgeVar}" >> $iffile
+                    if var_exists name=${vrfVar} ; then
+                        echo "# Interface ${ifnum} - VRF ${!vrfVar}, connected to bridge ${!bridgeVar}" >> $iffile
+                    else
+                        echo "# Interface ${ifnum}, connected to bridge ${!bridgeVar}" >> $iffile
+                    fi
                 fi
                 echo "auto ${!phy}" >> $iffile
                 echo "iface ${!phy} inet manual" >> $iffile
@@ -215,6 +247,13 @@ for node in ${global_nodes}; do
             fi
             ifnum=`expr $ifnum + 1`
         done
+        if var_exists name=${node}_dhcpif ; then
+            dhcpifVar=${node}_dhcpif
+            echo "# Primary Mgmt (DHCP) Interface ${!dhcpifVar}" >> $iffile
+            echo "allow-hotplug ${!dhcpifVar}" >> $iffile
+            echo "iface ${!dhcpifVar} inet dhcp" >> $iffile
+            echo "#" >> $iffile
+        fi
         #
         # /etc/hosts
         hostfile=/tmp/node-hostfile-$$
@@ -463,24 +502,40 @@ for node in ${global_nodes}; do
         sed -i "s/isisd=.*/isisd=${daemon_isisd}/g" ${daemoncfgfile}
         sed -i "s/bgpd=.*/bgpd=${daemon_bgpd}/g" ${daemoncfgfile}
         #
-        # Files prepared, now add them to new VM disks
-        echo "   ${node}: Updating VM disk with configuration"
-        sudo /usr/bin/guestfish \
-            --rw -a ${VM_storage_dir}/${node}_disk.qcow2 -i \
-            rm-rf /etc/udev/rules.d/70-persistent-net.rules : \
-            upload $iffile /etc/network/interfaces : \
-            upload $hostnamefile /etc/hostname : \
-            upload $hostfile /etc/hosts : \
-            upload ${Script_Dir}/modules.conf /etc/modules-load.d/modules.conf : \
-            upload ${Script_Dir}/$SysCtlFile /etc/sysctl.d/99-sysctl.conf : \
-            upload ${Script_Dir}/frr/${FRRpackage} /root/${FRRpackage} : \
-            mkdir /etc/frr : \
-            upload $frrconf /etc/frr/frr.conf : \
-            upload $vtyshconf /etc/frr/vtysh.conf : \
-            upload ${daemoncfgfile} /etc/frr/daemons : \
-            upload $frrinstall /etc/runonce.d/80_frr_install.sh : \
-            upload $tunnelcfgfile /etc/runboot.d/20_make_tunnels.sh
-
+        if $nodeExtern ; then
+            echo "   ${node}: Creating config_${node} directory with configuration for node"
+            rm -rf config_${node}
+            install -D -m644 $iffile config_${node}/etc/network/interfaces
+            install -D -m644 $hostnamefile config_${node}/etc/hostname
+            install -D -m644 $hostfile config_${node}/etc/hosts
+            install -D -m644 ${Script_Dir}/modules.conf config_${node}/etc/modules-load.d/modules.conf
+            install -D -m644 ${Script_Dir}/$SysCtlFile config_${node}/etc/sysctl.d/99-sysctl.conf
+            install -D -m644 ${Script_Dir}/frr/${FRRpackage} config_${node}/root/${FRRpackage}
+            install -D -m644 $frrconf config_${node}/etc/frr/frr.conf
+            install -D -m644 $vtyshconf config_${node}/etc/frr/vtysh.conf
+            install -D -m644 ${daemoncfgfile} config_${node}/etc/frr/daemons
+            install -D -m755 ${Script_Dir}/rc.local config_${node}/etc/rc.local
+            install -D -m755 $frrinstall config_${node}/etc/runonce.d/80_frr_install.sh
+            install -D -m755 $tunnelcfgfile config_${node}/etc/runboot.d/20_make_tunnels.sh
+        else
+            # Files prepared, now add them to new VM disks
+            echo "   ${node}: Updating VM disk with configuration"
+            sudo /usr/bin/guestfish \
+                --rw -a ${VM_storage_dir}/${node}_disk.qcow2 -i \
+                rm-rf /etc/udev/rules.d/70-persistent-net.rules : \
+                upload $iffile /etc/network/interfaces : \
+                upload $hostnamefile /etc/hostname : \
+                upload $hostfile /etc/hosts : \
+                upload ${Script_Dir}/modules.conf /etc/modules-load.d/modules.conf : \
+                upload ${Script_Dir}/$SysCtlFile /etc/sysctl.d/99-sysctl.conf : \
+                upload ${Script_Dir}/frr/${FRRpackage} /root/${FRRpackage} : \
+                mkdir /etc/frr : \
+                upload $frrconf /etc/frr/frr.conf : \
+                upload $vtyshconf /etc/frr/vtysh.conf : \
+                upload ${daemoncfgfile} /etc/frr/daemons : \
+                upload $frrinstall /etc/runonce.d/80_frr_install.sh : \
+                upload $tunnelcfgfile /etc/runboot.d/20_make_tunnels.sh
+        fi
         rm $iffile
         rm $hostnamefile
         rm $hostfile
