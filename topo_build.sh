@@ -115,7 +115,6 @@ for node in ${global_nodes}; do
     # Check for external node
     nodeExtern=false
     if var_exists name=${node}_external ; then
-        echo "AAAAAA"
         ext_name=${node}_external
         nodeExtern=${!extVar}
     fi

@@ -292,7 +292,7 @@ R3:
       ipv6: pprlab
   if2:
     phy: ens2
-    bridge: br1103
+    bridge: br103
     ipv6: fc00:103::3/64
     isis:
       ipv6: pprlab
