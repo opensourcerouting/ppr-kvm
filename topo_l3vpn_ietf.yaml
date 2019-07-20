@@ -79,9 +79,9 @@ Rs:
     srcPrefix: fc00:1000
     dstPrefix: fc00:2000
     netPrefix: fc00:ffff
-  ppr1: "Rd R5 R7 R4 R3 Rs"
+  ppr1: "Rd R5 R7_if4 R4 R3 Rs_if4"
   ppr2: "Rd R2 R4 R6 R3 Rs"
-  ppr3: "Rd R5 R4 R1 Rs"
+  ppr3: "Rd R5_if3 R4_if4 R1_if4 Rs"
   isis:
     name: pprlab
     type: level-1
@@ -136,9 +136,9 @@ Rd:
     srcPrefix: fc00:1000
     dstPrefix: fc00:2000
     netPrefix: fc00:ffff
-  ppr1: "Rs R3 R4 R7 R5 Rd"
+  ppr1: "Rs R3_if2 R4 R7 R5_if6 Rd"
   ppr2: "Rs R3 R6 R4 R2 Rd"
-  ppr3: "Rs R1 R4 R5 Rd"
+  ppr3: "Rs R1_if2 R4_if2 R5_if7 Rd"
   isis:
     name: pprlab
     type: level-1
