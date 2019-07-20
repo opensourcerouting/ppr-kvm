@@ -4,7 +4,7 @@
 
 global:
   nodes: "R1 R2 R3 R4 R5 R6 R7 Ra Rb Rc Rs Rd CE1 CE2"
-  phyif: "ext1 ext2"
+  phyif: "ext1 ext2 ext3 ext4 ext_br100 ext_br102 ext_br103 ext_br115 ext_br117 ext_br118 ext_br119"
 
   # If redistributeHostRoutes is set to true, then the host routes
   #   are redistributed into ISIS and any traffic not matching a PPR
@@ -47,6 +47,8 @@ CE2:
     distance: 100
 
 Rs:
+  external: true
+  dhcpif: enp7s0f1
   if1:
     phy: lo
     ipv6: fc00::ff/128
@@ -54,19 +56,19 @@ Rs:
       ipv6: pprlab
   if2:
     vrf: vrf-RED
-    phy: ens2
-    bridge: br100
+    bridge: none
+    phy: enp3s0
     ipv6: fc00:100::ff/64
   if3:
-    phy: ens3
-    bridge: br102
+    phy: enp6s0f0
+    bridge: none
     ipv6: fc00:102::ff/64
     isis:
       ipv6: pprlab
       network: point-to-point
   if4:
-    phy: ens4
-    bridge: br103
+    phy: enp6s0f1
+    bridge: none
     ipv6: fc00:103::ff/64
     isis:
       ipv6: pprlab
@@ -381,7 +383,7 @@ R5:
       network: point-to-point
   if7:
     phy: ens11
-    bridge: br114
+    bridge: br1114
     ipv6: fc00:114::5/64
     isis:
       ipv6: pprlab
@@ -431,35 +433,37 @@ R6:
     area: 49.1111.0000.0006.00
 
 R7:
+  external: true
+  dhcpif: enp7s0f1
   if1:
     phy: lo
     ipv6: fc00::7/128
     isis:
       ipv6: pprlab
   if2:
-    phy: ens2
-    bridge: br115
+    phy: enp6s0f0
+    bridge: none
     ipv6: fc00:115::7/64
     isis:
       ipv6: pprlab
       network: point-to-point
   if3:
-    phy: ens3
-    bridge: br117
+    phy: enp3s0
+    bridge: none
     ipv6: fc00:117::7/64
     isis:
       ipv6: pprlab
       network: point-to-point
   if4:
-    phy: ens4
-    bridge: br118
+    phy: enp4s0
+    bridge: none
     ipv6: fc00:118::7/64
     isis:
       ipv6: pprlab
       network: point-to-point
   if5:
-    phy: ens5
-    bridge: br119
+    phy: enp6s0f1
+    bridge: none
     ipv6: fc00:119::7/64
     isis:
       ipv6: pprlab
@@ -553,9 +557,44 @@ Rc:
 
 ext1:
   bridge: br201
-  phy: ens1f0
+  phy: enp6s0f0
 
 ext2: 
   bridge: br202
-  phy: ens1f1
+  phy: enp6s0f1
 
+ext3:
+  bridge: br114
+  phy: enp5s0f0
+
+ext4:
+  bridge: br1114
+  phy: enp5s0f1
+
+ext_br100:
+  bridge: br100
+  phy: enp4s0f0
+
+ext_br102:
+  bridge: br102
+  phy: enp4s0f1
+
+ext_br103:
+  bridge: br103
+  phy: enp4s0f2
+
+ext_br115:
+  bridge: br115
+  phy: enp7s0f2
+
+ext_br117:
+  bridge: br117
+  phy: enp7s0f0
+
+ext_br118:
+  bridge: br118
+  phy: enp7s0f1
+
+ext_br119:
+  bridge: br119
+  phy: enp7s0f3

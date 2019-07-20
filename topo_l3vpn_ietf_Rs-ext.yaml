@@ -47,63 +47,6 @@ CE2:
     distance: 100
 
 Rs:
-  if1:
-    phy: lo
-    ipv6: fc00::ff/128
-    isis:
-      ipv6: pprlab
-  if2:
-    vrf: vrf-RED
-    phy: ens2
-    bridge: br100
-    ipv6: fc00:100::ff/64
-  if3:
-    phy: ens3
-    bridge: br102
-    ipv6: fc00:102::ff/64
-    isis:
-      ipv6: pprlab
-      network: point-to-point
-  if4:
-    phy: ens4
-    bridge: br103
-    ipv6: fc00:103::ff/64
-    isis:
-      ipv6: pprlab
-      network: point-to-point
-  tunnelset1:
-    mode: ip6gre
-    thisSide: Source
-    count: 3
-    start: 0
-    srcPrefix: fc00:1000
-    dstPrefix: fc00:2000
-    netPrefix: fc00:ffff
-  ppr1: "Rd R5 R7 R4 R3 Rs"
-  ppr2: "Rd R2 R4 R6 R3 Rs"
-  ppr3: "Rd R5 R4 R3 Rs"
-  isis:
-    name: pprlab
-    type: level-1
-    area: 49.1111.0000.1999.00
-  bgp:
-    as: 65000
-    id: 1.1.1.1
-    neighbor1:
-      ip: fc00::d
-      as: 65000
-      addrfamily: ipv6 vpn
-    vrf1: 
-      name: vrf-RED
-      label: 500
-      rd: 1:1
-  ipv6static1:
-    net: fc00:201::/48
-    dest: fc00:100::ce1
-    distance: 100
-    vrf: vrf-RED
-
-RsExt:
   external: true
   dhcpif: enp7s0f1
   if1:
@@ -140,7 +83,7 @@ RsExt:
     netPrefix: fc00:ffff
   ppr1: "Rd R5 R7 R4 R3 Rs"
   ppr2: "Rd R2 R4 R6 R3 Rs"
-  ppr3: "Rd R5 R4 R3 Rs"
+  ppr3: "Rd R5 R4 R1 Rs"
   isis:
     name: pprlab
     type: level-1
@@ -197,7 +140,7 @@ Rd:
     netPrefix: fc00:ffff
   ppr1: "Rs R3 R4 R7 R5 Rd"
   ppr2: "Rs R3 R6 R4 R2 Rd"
-  ppr3: "Rs R3 R4 R5 Rd"
+  ppr3: "Rs R1 R4 R5 Rd"
   isis:
     name: pprlab
     type: level-1
