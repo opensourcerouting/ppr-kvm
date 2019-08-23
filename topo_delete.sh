@@ -78,13 +78,14 @@ for node in ${global_nodes}; do
         if var_exists name=${node}_if${ifnum}_bridge ; then
             if=${node}_if${ifnum}_bridge
             bridge=${!if}
-            BridgeFound=`grep "${bridge}:" /proc/net/dev`
-            if [ -n "${BridgeFound}" ] ; then
-                echo "Deleting Bridge ${bridge}"
-                sudo ip link set ${bridge} down 2> /dev/null
-                sudo brctl delbr ${bridge} 2> /dev/null
+            if [[ ! $bridge =~ "virbr" ]] ; then
+                BridgeFound=`grep "${bridge}:" /proc/net/dev`
+                if [ -n "${BridgeFound}" ] ; then
+                    echo "Deleting Bridge ${bridge}"
+                    sudo ip link set ${bridge} down 2> /dev/null
+                    sudo brctl delbr ${bridge} 2> /dev/null
+                fi
             fi
-            #
         fi
         ifnum=`expr $ifnum + 1`
     done

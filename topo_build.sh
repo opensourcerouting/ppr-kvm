@@ -11,7 +11,8 @@ MacPrefix="00:1C:44:"
 # Linux config files
 SysCtlFile="node-sysctl.conf"
 # FRR
-FRRpackage="frr_7.2-dev-20190719-00-g36c93778a-0_amd64.deb"
+FRRpackage="frr_7.2-dev-20190720-00-ga89793d6e-0_amd64.deb"
+FRRsysrepo="frr-sysrepo_7.2-dev-20190720-00-ga89793d6e-0_amd64.deb"
 FRRdaemons="daemons"
 #
 #########################################
@@ -219,16 +220,29 @@ for node in ${global_nodes}; do
                     fi
                 fi
                 echo "auto ${!phy}" >> $iffile
-                echo "iface ${!phy} inet manual" >> $iffile
-                echo "  up ip link set \$IFACE up" >> $iffile
-                if var_exists name=${vrfVar} ; then
-                    echo "  up ip link add name ${!vrfVar} type vrf table `expr 10 + ${ifnum}`" >> $iffile
-                    echo "  up ip link set ${!vrfVar} up" >> $iffile
-                    echo "  up ip link set \$IFACE master ${!vrfVar}" >> $iffile
-                fi
-                echo "  down ip link set \$IFACE down" >> $iffile
-                if var_exists name=${vrfVar} ; then
-                    echo "  down ip link delete name ${!vrfVar}" >> $iffile
+                frr_enable_var=${node}_if${ifnum}_frr
+                if_ipv4=${node}_if${ifnum}_ipv4
+                if [ "${!frr_enable_var}" = "false" ] && [ "${!if_ipv4}" != "" ] ; then
+                    echo "iface ${!phy} inet static" >> $iffile
+                    echo "# Manual IPv4 Interface outside FRR" >> $iffile
+                    echo "  address ${!if_ipv4}" >> $iffile
+                    if_ipv4gw=${node}_if${ifnum}_ipv4gw
+                    if [ "${!if_ipv4gw}" != "" ] ; then
+                        echo "  gateway ${!if_ipv4gw}" >> $iffile
+                        echo "  nameserver ${!if_ipv4gw}" >> $iffile
+                    fi
+                else
+                    echo "iface ${!phy} inet manual" >> $iffile
+                    echo "  up ip link set \$IFACE up" >> $iffile
+                    if var_exists name=${vrfVar} ; then
+                        echo "  up ip link add name ${!vrfVar} type vrf table `expr 10 + ${ifnum}`" >> $iffile
+                        echo "  up ip link set ${!vrfVar} up" >> $iffile
+                        echo "  up ip link set \$IFACE master ${!vrfVar}" >> $iffile
+                    fi
+                    echo "  down ip link set \$IFACE down" >> $iffile
+                    if var_exists name=${vrfVar} ; then
+                        echo "  down ip link delete name ${!vrfVar}" >> $iffile
+                    fi
                 fi
                 echo "iface ${!phy} inet6 manual" >> $iffile
                 echo "#" >> $iffile
@@ -303,47 +317,50 @@ for node in ${global_nodes}; do
         # interface config next
         ifnum=1
         while var_exists name=${node}_if${ifnum}_phy ; do
-            bridgeVar=${node}_if${ifnum}_bridge
-            ipv6TunnelVar=${node}_if${ifnum}_ipv6tunnel
-            phy=${node}_if${ifnum}_phy
-            if var_exists name=${node}_if${ifnum}_vrf ; then
-                vrfvar=${node}_if${ifnum}_vrf
-                echo "interface ${!phy} vrf ${!vrfvar}" >> $frrconf
-            else
-                echo "interface ${!phy}" >> $frrconf
+            frr_enable_var=${node}_if${ifnum}_frr
+            if [ "${!frr_enable_var}" != "false" ] ; then
+                bridgeVar=${node}_if${ifnum}_bridge
+                ipv6TunnelVar=${node}_if${ifnum}_ipv6tunnel
+                phy=${node}_if${ifnum}_phy
+                if var_exists name=${node}_if${ifnum}_vrf ; then
+                    vrfvar=${node}_if${ifnum}_vrf
+                    echo "interface ${!phy} vrf ${!vrfvar}" >> $frrconf
+                else
+                    echo "interface ${!phy}" >> $frrconf
+                fi
+                if var_exists name=${bridgeVar} ; then
+                    echo " description Connected to KVM bridge ${!bridgeVar}" >> $frrconf
+                elif var_exists name=${ipv6TunnelVar} ; then
+                    echo " description IPv6 Tunnel (Mode ${!ipv6TunnelVar})" >> $frrconf
+                else
+                    echo " description Loopback" >> $frrconf
+                fi
+                ipv4AddrVar=${node}_if${ifnum}_ipv4
+                if var_exists name=${ipv4AddrVar} ; then
+                    for addr in ${!ipv4AddrVar}; do
+                        echo " ip address ${addr}" >> $frrconf
+                    done
+                fi
+                ipv6AddrVar=${node}_if${ifnum}_ipv6
+                if var_exists name=${ipv6AddrVar} ; then
+                    for addr in ${!ipv6AddrVar}; do
+                        echo " ipv6 address ${addr}" >> $frrconf
+                    done
+                fi
+                isisIPv4Proc=${node}_if${ifnum}_isis_ipv4
+                if var_exists name=${isisIPv4Proc} ; then
+                    echo " ip router isis ${!isisIPv4Proc}" >> $frrconf
+                fi
+                isisIPv6Proc=${node}_if${ifnum}_isis_ipv6
+                if var_exists name=${isisIPv6Proc} ; then
+                    echo " ipv6 router isis ${!isisIPv6Proc}" >> $frrconf
+                fi
+                isisNet=${node}_if${ifnum}_isis_network
+                if var_exists name=${isisNet} ; then
+                    echo " isis network ${!isisNet}" >> $frrconf
+                fi
+                echo "!" >> $frrconf
             fi
-            if var_exists name=${bridgeVar} ; then
-                echo " description Connected to KVM bridge ${!bridgeVar}" >> $frrconf
-            elif var_exists name=${ipv6TunnelVar} ; then
-                echo " description IPv6 Tunnel (Mode ${!ipv6TunnelVar})" >> $frrconf
-            else
-                echo " description Loopback" >> $frrconf
-            fi
-            ipv4AddrVar=${node}_if${ifnum}_ipv4
-            if var_exists name=${ipv4AddrVar} ; then
-                for addr in ${!ipv4AddrVar}; do
-                    echo " ip address ${addr}" >> $frrconf
-                done
-            fi
-            ipv6AddrVar=${node}_if${ifnum}_ipv6
-            if var_exists name=${ipv6AddrVar} ; then
-                for addr in ${!ipv6AddrVar}; do
-                    echo " ipv6 address ${addr}" >> $frrconf
-                done
-            fi
-            isisIPv4Proc=${node}_if${ifnum}_isis_ipv4
-            if var_exists name=${isisIPv4Proc} ; then
-                echo " ip router isis ${!isisIPv4Proc}" >> $frrconf
-            fi
-            isisIPv6Proc=${node}_if${ifnum}_isis_ipv6
-            if var_exists name=${isisIPv6Proc} ; then
-                echo " ipv6 router isis ${!isisIPv6Proc}" >> $frrconf
-            fi
-            isisNet=${node}_if${ifnum}_isis_network
-            if var_exists name=${isisNet} ; then
-                echo " isis network ${!isisNet}" >> $frrconf
-            fi
-            echo "!" >> $frrconf
             ifnum=`expr $ifnum + 1`
         done
         # Now Add Route BGP config
@@ -471,6 +488,24 @@ for node in ${global_nodes}; do
         echo "chown frr:frr /etc/frr/daemons" >> $frrinstall
         echo "chown frr:frr /etc/frr/vtysh.conf" >> $frrinstall
         echo "rm -f /root/${FRRpackage}" >> $frrinstall
+        echo "while [ ! -f '/usr/lib/x86_64-linux-gnu/frr/modules/sysrepo.so' ] ; do" >> $frrinstall
+        echo "  yes \"\" | DEBIAN_FRONTEND=noninteractive dpkg -i /root/${FRRsysrepo}" >> $frrinstall
+        echo "  if [ ! -f '/usr/lib/x86_64-linux-gnu/frr/modules/sysrepo.so' ] ; then sleep 5; fi" >> $frrinstall
+        echo "done" >> $frrinstall
+        echo "rm -f /root/${FRRsysrepo}" >> $frrinstall
+        sysrepo_enable_var=${node}_service_sysrepod
+        if [ "${!sysrepo_enable_var}" = "true" ]; then
+            echo "sysrepoctl --install --yang /usr/share/yang/frr-interface.yang" >> $frrinstall
+            echo "sysrepoctl --install --yang /usr/share/yang/frr-isisd.yang" >> $frrinstall
+            echo "sysrepoctl --install --yang /usr/share/yang/frr-ppr.yang" >> $frrinstall
+            echo "/usr/bin/systemctl enable sysrepod.service" >> $frrinstall
+            echo "/usr/bin/systemctl start sysrepod.service" >> $frrinstall
+            netopeer2server_enable_var=${node}_service_netopeer2server
+            if [ "${!netopeer2server_enable_var}" = "true" ]; then
+                echo "/usr/bin/systemctl enable netopeer2-server.service" >> $frrinstall
+                echo "/usr/bin/systemctl start netopeer2-server.service" >> $frrinstall
+            fi
+        fi
         #
         # /etc/runboot.d/20_make_tunnels.sh
         tunnelSetNum=1
@@ -541,6 +576,7 @@ for node in ${global_nodes}; do
                 upload ${Script_Dir}/modules.conf /etc/modules-load.d/modules.conf : \
                 upload ${Script_Dir}/$SysCtlFile /etc/sysctl.d/99-sysctl.conf : \
                 upload ${Script_Dir}/frr/${FRRpackage} /root/${FRRpackage} : \
+                upload ${Script_Dir}/frr/${FRRsysrepo} /root/${FRRsysrepo} : \
                 mkdir /etc/frr : \
                 upload $frrconf /etc/frr/frr.conf : \
                 upload $vtyshconf /etc/frr/vtysh.conf : \
