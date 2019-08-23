@@ -89,11 +89,11 @@ CE2:
     ipv4: 192.168.124.212/24
     ipv4gw: 192.168.124.1
     frr: false
-  if2:
+  if3:
     phy: ens3
     bridge: br101
     ipv6: fc00:101::ce2/64
-  if3:
+  if4:
     phy: ens4
     bridge: br202
     ipv6: fc00:202::ce2/64
@@ -141,9 +141,9 @@ Rs:
     srcPrefix: fc00:1000
     dstPrefix: fc00:2000
     netPrefix: fc00:ffff
-  ppr1: "Rd R5 R7_if4 R4 R3 Rs_if4"
+  ppr1: "Rd R5 R7_if4 R4 R3 Rs_if5"
   ppr2: "Rd R2 R4 R6 R3 Rs"
-  ppr3: "Rd R5 R2 R1_if4 Rs"
+  ppr3: "Rd R5 R2 R1_if6 Rs"
   isis:
     name: pprlab
     type: level-1
@@ -207,9 +207,9 @@ Rd:
     srcPrefix: fc00:1000
     dstPrefix: fc00:2000
     netPrefix: fc00:ffff
-  ppr1: "Rs R3_if2 R4 R7 R5_if6 Rd"
+  ppr1: "Rs R3 R4 R7 R5_if6 Rd"
   ppr2: "Rs R3 R6 R4 R2 Rd"
-  ppr3: "Rs R1_if2 R2 R5 Rd"
+  ppr3: "Rs R1_if3 R2 R5 Rd"
   isis:
     name: pprlab
     type: level-1
