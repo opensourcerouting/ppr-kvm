@@ -229,7 +229,7 @@ for node in ${global_nodes}; do
                     if_ipv4gw=${node}_if${ifnum}_ipv4gw
                     if [ "${!if_ipv4gw}" != "" ] ; then
                         echo "  gateway ${!if_ipv4gw}" >> $iffile
-                        echo "  nameserver ${!if_ipv4gw}" >> $iffile
+                        echo "  dns-nameserver ${!if_ipv4gw}" >> $iffile
                     fi
                 else
                     echo "iface ${!phy} inet manual" >> $iffile
