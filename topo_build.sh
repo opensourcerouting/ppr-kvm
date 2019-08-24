@@ -19,6 +19,10 @@ FRRdaemons="daemons"
 # End config
 #########################################
 #
+# Update file cache first
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+${DIR}/update_cache.py
+#
 if test $# -lt 1 ; then
         echo "Need YAML Config file as argument"
         exit 1
@@ -557,7 +561,8 @@ for node in ${global_nodes}; do
             install -D -m644 $hostfile config_${node}/etc/hosts
             install -D -m644 ${Script_Dir}/modules.conf config_${node}/etc/modules-load.d/modules.conf
             install -D -m644 ${Script_Dir}/$SysCtlFile config_${node}/etc/sysctl.d/99-sysctl.conf
-            install -D -m644 ${Script_Dir}/frr/${FRRpackage} config_${node}/root/${FRRpackage}
+            install -D -m644 ${Script_Dir}/cache/${FRRpackage} config_${node}/root/${FRRpackage}
+            install -D -m644 ${Script_Dir}/cache/${FRRsysrepo} config_${node}/root/${FRRpackage}
             install -D -m644 $frrconf config_${node}/etc/frr/frr.conf
             install -D -m644 $vtyshconf config_${node}/etc/frr/vtysh.conf
             install -D -m644 ${daemoncfgfile} config_${node}/etc/frr/daemons
@@ -575,8 +580,8 @@ for node in ${global_nodes}; do
                 upload $hostfile /etc/hosts : \
                 upload ${Script_Dir}/modules.conf /etc/modules-load.d/modules.conf : \
                 upload ${Script_Dir}/$SysCtlFile /etc/sysctl.d/99-sysctl.conf : \
-                upload ${Script_Dir}/frr/${FRRpackage} /root/${FRRpackage} : \
-                upload ${Script_Dir}/frr/${FRRsysrepo} /root/${FRRsysrepo} : \
+                upload ${Script_Dir}/cache/${FRRpackage} /root/${FRRpackage} : \
+                upload ${Script_Dir}/cache/${FRRsysrepo} /root/${FRRsysrepo} : \
                 mkdir /etc/frr : \
                 upload $frrconf /etc/frr/frr.conf : \
                 upload $vtyshconf /etc/frr/vtysh.conf : \
