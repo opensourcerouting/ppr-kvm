@@ -2,8 +2,9 @@
 ##set -x
 #
 ##### Configuration starts here ##########
-# Source VM Template
+# Source VM Template (VLC Template is optional, but will speed up repeated deployment)
 VM_Template=debian10_template
+VM_Template_with_VLC=debian10_vlc_template
 #
 # Mac Address Prefix (first 3 MAC Address Bytes)
 MacPrefix="00:1C:44:"
@@ -42,9 +43,6 @@ fi
 #
 # Get Directory of this script
 Script_Dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-#
-# Get Source disk file from template VM
-VM_Template_disk=`virsh dumpxml ${VM_Template} | grep "source file" | grep -o "'.*'" | sed "s/'//g"`
 #
 function parse_yaml {
     local prefix=$2
@@ -110,7 +108,21 @@ if [ "`virsh list --state-shutoff --all | grep \ $VM_Template`" == "" ] ; then
     echo "Template VM $VM_Template not found or not turned off"
     exit 1
 fi
+if var_exists name=VM_Template_with_VLC ; then
+    if [ "`virsh list --state-shutoff --all | grep \ $VM_Template_with_VLC`" == "" ] ; then
+        echo "Template VM $VM_Template not found or not turned off"
+        exit 1
+    fi
+fi
 #
+# Get Source disk file from template VM
+VM_Template_disk=`virsh dumpxml ${VM_Template} | grep "source file" | grep -o "'.*'" | sed "s/'//g"`
+if var_exists name=VM_Template_with_VLC ; then
+    VM_Template_VLC_disk=`virsh dumpxml ${VM_Template_with_VLC} | grep "source file" | grep -o "'.*'" | sed "s/'//g"`
+else
+    # no VLC template - use normal template and let VLC install itself during boot of VM
+    VM_Template_VLC_disk=${VM_Template_disk}
+fi
 # Get VM Storage directory
 VM_storage_dir=$(dirname `virsh dumpxml ${VM_Template} | grep "source file" | grep -o "'.*'" | sed "s/'//g"`)
 #
@@ -173,7 +185,14 @@ for node in ${global_nodes}; do
     #
     if [ "`virsh list --all | grep \ $node\ `" = "" ]; then
         if ! $nodeExtern ; then
-            sudo sh -c "pv -B 500M ${VM_Template_disk} > ${VM_storage_dir}/${node}_disk.qcow2"
+            # Video Server / Client use template with VLC pre-installed if it exists
+            if var_exists name=${node}_video ; then
+                echo "Using Video Template ${VM_Template_VLC_disk}"
+                sudo sh -c "pv -B 500M ${VM_Template_VLC_disk} > ${VM_storage_dir}/${node}_disk.qcow2"
+            else
+                echo "Using Template ${VM_Template_disk}"
+                sudo sh -c "pv -B 500M ${VM_Template_disk} > ${VM_storage_dir}/${node}_disk.qcow2"
+            fi
             node_xml="/tmp/node_$node.xml"
             cp ${Script_Dir}/node-template-${HostSystem}.xml $node_xml
             sed -i "s|__TEMPLATENAME__|$node|g" $node_xml
@@ -611,6 +630,7 @@ for node in ${global_nodes}; do
             for (( i=${!udpClientStartVar}; i<=${udpClientEnd}; i++)) ; do
                 udpclient=config_${node}/root/extras/udpping_${!udpClientNameVar}_${i}.sh
                 get_if_v6addr ${!udpClientDestVar}
+                ipv6Addr=`echo $ipv6Addr | cut -f1 -d"/"`
                 echo "/usr/local/bin/udpping.py ${ipv6Addr} ${i}" >> $udpclient
             done
             if [ $udpClient == 1 ] ; then
@@ -621,6 +641,89 @@ for node in ${global_nodes}; do
             fi
             udpClient=`expr $udpClient + 1`            
         done
+        #
+        # Video Server / Client processing
+        if var_exists name=${node}_video ; then
+            echo "#" >> $extrasinstall
+            echo "dpkg -l | grep vlc > /dev/null" >> $extrasinstall
+            echo "if [ \$? != 0 ]; then" >> $extrasinstall
+            echo "   # Video Server/Client - install VLC (but ignore errors if offline)" >> $extrasinstall
+            echo "   echo ''" >> $extrasinstall
+            echo "   echo 'Installing VLC - Please wait'" >> $extrasinstall
+            echo "   echo ''" >> $extrasinstall
+            echo "   /usr/bin/apt-get install -y vlc >/dev/null 2> /dev/null | true" >> $extrasinstall
+            echo "fi" >> $extrasinstall
+            echo "#" >> $extrasinstall
+            #
+            # Video Servers
+            #
+            videoServerNum=1
+            while var_exists name=${node}_video_server_movie${videoServerNum} ; do
+                echo "Video Server ${videoServerNum}"
+                movieVar=${node}_video_server_movie${videoServerNum}
+                movieDestVar=${node}_video_server_movie${videoServerNum}_dest
+                moviePortVar=${node}_video_server_movie${videoServerNum}_port
+                install -D -m644 ${Script_Dir}/cache/${!movieVar} config_${node}/root/extras/
+                movieServer=config_${node}/root/extras/movie_to_port${!moviePortVar}.sh
+                get_if_v6addr ${!movieDestVar}
+                ipv6Addr=`echo $ipv6Addr | cut -f1 -d"/"`
+                echo "# Stream Movie ${videoServerNum}" > $movieServer
+                echo "#" >> $movieServer
+                echo "# Movie: ${!movieVar}" >> $movieServer
+                echo "# Send to ${!movieDestVar} at ${ipv6Addr}, Port ${!moviePortVar}" >> $movieServer
+                echo "#" >> $movieServer
+                echo "cvlc -A alsa,none ~ppr-lab/movies/${!movieDestVar} --noaudio --loop --sout udp://[${ipv6Addr}]:${!moviePortVar}" >> $movieServer
+                movieServer=config_${node}/root/extras/movie_${!movieDestVar}_port${!moviePortVar}.service
+                echo "[Unit]" > $movieServer
+                echo "Description=Movie to ${!movieDestVar} at ${ipv6Addr} Port ${!moviePortVar}" >> $movieServer
+                echo "After=network.target" >> $movieServer
+                echo "#" >> $movieServer
+                echo "[Service]" >> $movieServer
+                echo "Type=exec" >> $movieServer
+                echo "KillMode=process" >> $movieServer
+                echo "User=ppr-lab" >> $movieServer
+                echo "ExecStart=/usr/bin/cvlc -A alsa,none ~ppr-lab/movies/${!movieVar} --noaudio --loop --sout udp://[${ipv6Addr}]:${!moviePortVar}" >> $movieServer
+                echo "#" >> $movieServer
+                echo "[Install]" >> $movieServer
+                echo "WantedBy=multi-user.target" >> $movieServer
+                #
+                if [ $videoServerNum == 1 ] ; then
+                    # Only need this once for all movies
+                    echo "# Video Servers" >> $extrasinstall
+                    echo "#" >> $extrasinstall
+                    echo "# Move Videos to ppr-lab user" >> $extrasinstall
+                    echo "install -d -m755 -o ppr-lab -g ppr-lab ~ppr-lab/movies" >> $extrasinstall
+                    echo "mv /root/extras/*.mp4 ~ppr-lab/movies/" >> $extrasinstall
+                    echo "chown ppr-lab:ppr-lab ~ppr-lab/movies/*" >> $extrasinstall
+                    echo "mv /root/extras/movie*.sh ~ppr-lab/" >> $extrasinstall
+                    echo "chown ppr-lab:ppr-lab ~ppr-lab/movie*.sh" >> $extrasinstall
+                    echo "chmod 755 ~ppr-lab/movie*.sh" >> $extrasinstall
+                    echo "#" >> $extrasinstall
+                fi
+                echo "mv /root/extras/movie_${!movieDestVar}_port${!moviePortVar}.service /lib/systemd/system/" >> $extrasinstall
+                echo "systemctl enable movie_${!movieDestVar}_port${!moviePortVar}.service" >> $extrasinstall
+                echo "systemctl start movie_${!movieDestVar}_port${!moviePortVar}.service" >> $extrasinstall
+                videoServerNum=`expr $videoServerNum + 1`
+            done
+            # Video Clients
+            #
+            videoClientNum=1
+            while var_exists name=${node}_video_clientport${videoClientNum} ; do
+                moviePortVar=${node}_video_clientport${videoClientNum}
+                movieClient=config_${node}/root/extras/vlc_play_port${!moviePortVar}.sh
+                echo "vlc udp://@:${!moviePortVar}" > $movieClient
+                if [ $videoClientNum == 1 ] ; then
+                    # Only need this once for all movies
+                    echo "# Video Client Scripts" >> $extrasinstall
+                    echo "#" >> $extrasinstall
+                    echo "# Move Videos to ppr-lab user" >> $extrasinstall
+                    echo "install -D -m755 -o ppr-lab -g ppr-lab /root/extras/vlc_play*.sh ~ppr-lab/" >> $extrasinstall
+                    echo "rm /root/extras/vlc_play*.sh" >> $extrasinstall
+                fi
+                videoClientNum=`expr $videoClientNum + 1`
+            done
+        fi
+        #
         #
         if $nodeExtern ; then
             echo "   ${node}: Creating config_${node} directory with configuration for node"
@@ -671,6 +774,7 @@ for node in ${global_nodes}; do
         rm $extrasinstall
     fi
     virsh start $node 2> /dev/null
+
 done
 
 # Process external interface
