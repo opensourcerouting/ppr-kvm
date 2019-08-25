@@ -13,6 +13,7 @@ global:
   redistributeHostRoutes: false
 
 Controller:
+  frr: false
   if1:
     phy: lo
   if2:
@@ -39,6 +40,15 @@ H1:
     net: ::/0
     dest: fc00:201::ce1
     distance: 100
+  udpecho:
+    client1: H3
+      dest: H3_if3
+      startport: 10001
+      count: 3
+  video: true
+    clientport1: 10001
+    clientport2: 10002
+    clientport3: 10003
 
 H3:
   if1:
@@ -57,6 +67,21 @@ H3:
     net: ::/0
     dest: fc00:202::ce2
     distance: 100
+  udpecho:
+    server:
+      startport: 10001
+      count: 3
+  video: true
+    server:
+      movie1: bbb_sunflower_1080p_30fps_normal.mp4
+        dest: H1_if3
+        port: 10001
+      movie2: sintel-2048-surround.mp4
+        dest: H1_if3
+        port: 10002
+      movie3: ed_hd.mp4
+        dest: H1_if3
+        port: 10003
 
 CE1:
   if1:
