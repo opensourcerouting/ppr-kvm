@@ -1,0 +1,28 @@
+# This file is systemd template for netopeer2-server service. To
+# register netopeer2-server with systemd, place the 
+# netopeer2-server.service file to the /lib/systemd/system/
+# directory and then start it using systemctl (see bellow).
+#
+# Enable netopeer2-server to start on boot: 
+#         systemctl enable netopeer2-server.service
+#
+# Start netopeer2-server immediately: 
+#         systemctl start netopeer2-server.service
+#
+# Stop netopeer2-server:
+#         systemctl stop netopeer2-server.service
+#
+# Status:
+#         systemctl status netopeer2-server.service
+
+[Unit]
+Description=netopeer2-server Daemon Service
+After=network.target
+# 
+[Service]
+Type=exec
+KillMode=process
+ExecStart=/usr/local/bin/netopeer2-server -d -v1
+#
+[Install]
+WantedBy=multi-user.target

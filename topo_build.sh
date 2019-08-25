@@ -117,7 +117,6 @@ VM_storage_dir=$(dirname `virsh dumpxml ${VM_Template} | grep "source file" | gr
 # Parse Topology Configuration File
 #
 eval $(parse_yaml ${YAML_Configfile})
-
 #
 # Build nodes
 #
@@ -137,6 +136,18 @@ for node in ${global_nodes}; do
         echo "Processing virtual node $node"
     fi
     #
+    # Wipe previous config staging directory and recreate it
+    rm -rf config_${node}
+    install -d -m755 config_${node}/root/extras
+    #
+    # By default, run FRR unless disabled
+    frrInstall="true"
+    frrVar=${node}_frr
+    if var_exists name=${frrVar} ; then
+        if [ "${!frrVar}" == "false" ] ; then
+            frrInstall="false"
+        fi
+    fi
     # By default, no BGP or ISIS protocol daemon
     daemon_isisd="no"
     daemon_bgpd="no"
@@ -480,34 +491,46 @@ for node in ${global_nodes}; do
         echo "service integrated-vtysh-config" >> $vtyshconf
         #
         # /etc/runonce.d/80_frr_install.sh
-        frrinstall=/tmp/node-frrinstall-$$
-        echo "#!/usr/bin/env bash" > $frrinstall
-        echo "#" >> $frrinstall
-        echo "while [ \"\`which vtysh\`\" = \"\" ] ; do" >> $frrinstall
-        echo "  yes \"\" | DEBIAN_FRONTEND=noninteractive dpkg -i /root/${FRRpackage}" >> $frrinstall
-        echo "  if [ \"\`which vtysh\`\" == \"\" ] ; then sleep 5; fi" >> $frrinstall
-        echo "done" >> $frrinstall
-        echo "chown frr:frr /etc/frr" >> $frrinstall
-        echo "chown frr:frr /etc/frr/frr.conf" >> $frrinstall
-        echo "chown frr:frr /etc/frr/daemons" >> $frrinstall
-        echo "chown frr:frr /etc/frr/vtysh.conf" >> $frrinstall
-        echo "rm -f /root/${FRRpackage}" >> $frrinstall
-        echo "while [ ! -f '/usr/lib/x86_64-linux-gnu/frr/modules/sysrepo.so' ] ; do" >> $frrinstall
-        echo "  yes \"\" | DEBIAN_FRONTEND=noninteractive dpkg -i /root/${FRRsysrepo}" >> $frrinstall
-        echo "  if [ ! -f '/usr/lib/x86_64-linux-gnu/frr/modules/sysrepo.so' ] ; then sleep 5; fi" >> $frrinstall
-        echo "done" >> $frrinstall
-        echo "rm -f /root/${FRRsysrepo}" >> $frrinstall
-        sysrepo_enable_var=${node}_service_sysrepod
-        if [ "${!sysrepo_enable_var}" = "true" ]; then
-            echo "sysrepoctl --install --yang /usr/share/yang/frr-interface.yang" >> $frrinstall
-            echo "sysrepoctl --install --yang /usr/share/yang/frr-isisd.yang" >> $frrinstall
-            echo "sysrepoctl --install --yang /usr/share/yang/frr-ppr.yang" >> $frrinstall
-            echo "/usr/bin/systemctl enable sysrepod.service" >> $frrinstall
-            echo "/usr/bin/systemctl start sysrepod.service" >> $frrinstall
-            netopeer2server_enable_var=${node}_service_netopeer2server
-            if [ "${!netopeer2server_enable_var}" = "true" ]; then
-                echo "/usr/bin/systemctl enable netopeer2-server.service" >> $frrinstall
-                echo "/usr/bin/systemctl start netopeer2-server.service" >> $frrinstall
+        frrsetup=/tmp/node-frrsetup-$$
+        echo "#!/usr/bin/env bash" > $frrsetup
+        echo "#" >> $frrsetup
+        if [ "${frrInstall}" == "false" ] ; then
+            echo "# FRR not installed on this node" >> $frrsetup
+            echo "rm -rf /etc/frr" >> $frrsetup
+        else
+            # Run FRR on this node
+            install -D -m644 ${Script_Dir}/cache/${FRRpackage} config_${node}/root/extras/${FRRpackage}
+            install -D -m644 ${Script_Dir}/cache/${FRRsysrepo} config_${node}/root/extras/${FRRsysrepo}
+            echo "while [ \"\`which vtysh\`\" = \"\" ] ; do" >> $frrsetup
+            echo "  yes \"\" | DEBIAN_FRONTEND=noninteractive dpkg -i /root/extras/${FRRpackage}" >> $frrsetup
+            echo "  if [ \"\`which vtysh\`\" == \"\" ] ; then sleep 5; fi" >> $frrsetup
+            echo "done" >> $frrsetup
+            echo "chown frr:frr /etc/frr" >> $frrsetup
+            echo "chown frr:frr /etc/frr/frr.conf" >> $frrsetup
+            echo "chown frr:frr /etc/frr/daemons" >> $frrsetup
+            echo "chown frr:frr /etc/frr/vtysh.conf" >> $frrsetup
+            echo "rm -f /root/extras/${FRRpackage}" >> $frrsetup
+            echo "while [ ! -f '/usr/lib/x86_64-linux-gnu/frr/modules/sysrepo.so' ] ; do" >> $frrsetup
+            echo "  yes \"\" | DEBIAN_FRONTEND=noninteractive dpkg -i /root/extras/${FRRsysrepo}" >> $frrsetup
+            echo "  if [ ! -f '/usr/lib/x86_64-linux-gnu/frr/modules/sysrepo.so' ] ; then sleep 5; fi" >> $frrsetup
+            echo "done" >> $frrsetup
+            echo "rm -f /root/extras/${FRRsysrepo}" >> $frrsetup
+            sysrepo_enable_var=${node}_service_sysrepod
+            if [ "${!sysrepo_enable_var}" = "true" ]; then
+                echo "sysrepoctl --install --yang /usr/share/yang/frr-interface.yang" >> $frrsetup
+                echo "sysrepoctl --install --yang /usr/share/yang/frr-isisd.yang" >> $frrsetup
+                echo "sysrepoctl --install --yang /usr/share/yang/frr-ppr.yang" >> $frrsetup
+                install -D -m644 ${Script_Dir}/extras/sysrepod.service config_${node}/root/extras/
+                echo "cp /root/extras/sysrepod.service /lib/systemd/system/" >> $frrsetup
+                echo "/usr/bin/systemctl enable sysrepod.service" >> $frrsetup
+                echo "/usr/bin/systemctl start sysrepod.service" >> $frrsetup
+                netopeer2server_enable_var=${node}_service_netopeer2server
+                if [ "${!netopeer2server_enable_var}" = "true" ]; then
+                    install -D -m644 ${Script_Dir}/extras/netopeer2-server.service config_${node}/root/extras/
+                    echo "cp /root/extras/netopeer2-server.service /lib/systemd/system/" >> $frrsetup
+                    echo "/usr/bin/systemctl enable netopeer2-server.service" >> $frrsetup
+                    echo "/usr/bin/systemctl start netopeer2-server.service" >> $frrsetup
+                fi
             fi
         fi
         #
@@ -553,22 +576,24 @@ for node in ${global_nodes}; do
         sed -i "s/isisd=.*/isisd=${daemon_isisd}/g" ${daemoncfgfile}
         sed -i "s/bgpd=.*/bgpd=${daemon_bgpd}/g" ${daemoncfgfile}
         #
+        # /etc/runonce.d/10_extra_install.sh
+        extrasinstall=/tmp/node-extrasinstall-$$
+        echo "#!/usr/bin/env bash" > $extrasinstall
+        #
         if $nodeExtern ; then
             echo "   ${node}: Creating config_${node} directory with configuration for node"
-            rm -rf config_${node}
             install -D -m644 $iffile config_${node}/etc/network/interfaces
             install -D -m644 $hostnamefile config_${node}/etc/hostname
             install -D -m644 $hostfile config_${node}/etc/hosts
             install -D -m644 ${Script_Dir}/modules.conf config_${node}/etc/modules-load.d/modules.conf
             install -D -m644 ${Script_Dir}/$SysCtlFile config_${node}/etc/sysctl.d/99-sysctl.conf
-            install -D -m644 ${Script_Dir}/cache/${FRRpackage} config_${node}/root/${FRRpackage}
-            install -D -m644 ${Script_Dir}/cache/${FRRsysrepo} config_${node}/root/${FRRpackage}
             install -D -m644 $frrconf config_${node}/etc/frr/frr.conf
             install -D -m644 $vtyshconf config_${node}/etc/frr/vtysh.conf
             install -D -m644 ${daemoncfgfile} config_${node}/etc/frr/daemons
             install -D -m755 ${Script_Dir}/rc.local config_${node}/etc/rc.local
-            install -D -m755 $frrinstall config_${node}/etc/runonce.d/80_frr_install.sh
+            install -D -m755 $frrsetup config_${node}/etc/runonce.d/80_frr_install.sh
             install -D -m755 $tunnelcfgfile config_${node}/etc/runboot.d/20_make_tunnels.sh
+            install -D -m755 $extrasinstall extrasinstall/10_extra_install.sh
         else
             # Files prepared, now add them to new VM disks
             echo "   ${node}: Updating VM disk with configuration"
@@ -580,25 +605,32 @@ for node in ${global_nodes}; do
                 upload $hostfile /etc/hosts : \
                 upload ${Script_Dir}/modules.conf /etc/modules-load.d/modules.conf : \
                 upload ${Script_Dir}/$SysCtlFile /etc/sysctl.d/99-sysctl.conf : \
-                upload ${Script_Dir}/cache/${FRRpackage} /root/${FRRpackage} : \
-                upload ${Script_Dir}/cache/${FRRsysrepo} /root/${FRRsysrepo} : \
                 mkdir /etc/frr : \
                 upload $frrconf /etc/frr/frr.conf : \
                 upload $vtyshconf /etc/frr/vtysh.conf : \
                 upload ${daemoncfgfile} /etc/frr/daemons : \
-                upload $frrinstall /etc/runonce.d/80_frr_install.sh : \
-                upload $tunnelcfgfile /etc/runboot.d/20_make_tunnels.sh
+                upload $frrsetup /etc/runonce.d/80_frr_install.sh : \
+                upload $tunnelcfgfile /etc/runboot.d/20_make_tunnels.sh : \
+                mkdir /root/extras : \
+                copy-in config_${node}/root/extras /root/ : \
+                upload $extrasinstall /etc/runonce.d/10_extra_install.sh
+            #
+            # Delete config dir for VM nodes - no need to keep it around
+            rm -rf config_${node}
         fi
         rm $iffile
         rm $hostnamefile
         rm $hostfile
         rm $frrconf
         rm $vtyshconf
-        rm $frrinstall
+        rm $frrsetup
         rm $tunnelcfgfile
         rm $daemoncfgfile
+        rm $extrasinstall
     fi
     virsh start $node 2> /dev/null
+
+    break
 done
 
 # Process external interface

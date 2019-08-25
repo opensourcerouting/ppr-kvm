@@ -1,0 +1,29 @@
+# This file is systemd template for sysrepod service. To
+# register sysrepod with systemd, place the sysrepod.service file
+# to the /lib/systemd/system/ directory and then start it
+# using systemctl (see bellow).
+#
+# Enable sysrepod to start on boot: 
+#         systemctl enable sysrepod.service
+#
+# Start sysrepod immediately: 
+#         systemctl start sysrepod.service
+#
+# Stop sysrepod:
+#         systemctl stop sysrepod.service
+#
+# Status:
+#         systemctl status sysrepod.service
+
+[Unit]
+Description=Sysrepo Daemon Service
+After=network.target
+Before=netopeer2-server.service
+# 
+[Service]
+Type=exec
+KillMode=process
+ExecStart=/usr/local/bin/sysrepod -l1 -d
+#
+[Install]
+WantedBy=multi-user.target
