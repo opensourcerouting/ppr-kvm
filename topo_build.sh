@@ -580,6 +580,48 @@ for node in ${global_nodes}; do
         extrasinstall=/tmp/node-extrasinstall-$$
         echo "#!/usr/bin/env bash" > $extrasinstall
         #
+        # UDP Ping Servers
+        #
+        udpServerStartVar=${node}_udpecho_server_startport
+        if var_exists name=${udpServerStartVar} ; then
+            echo "#" >> $extrasinstall
+            echo "# UDP Echo Servers" >> $extrasinstall
+            udpServerCountVar=${node}_udpecho_server_count
+            install -D -m644 ${Script_Dir}/extras/udp6-echo@.service config_${node}/root/extras/udp6-echo@.service
+            echo "mv /root/extras/udp6-echo@.service /lib/systemd/system/" >> $extrasinstall
+            udpServerEnd=`expr ${!udpServerStartVar} + ${!udpServerCountVar} - 1`
+            for (( i=${!udpServerStartVar}; i<=${udpServerEnd}; i++)) ; do
+                echo "#   - Echo Server at port ${i}" >> $extrasinstall
+                echo "systemctl enable udp6-echo@${i}.service" >> $extrasinstall
+                echo "systemctl start udp6-echo@${i}.service" >> $extrasinstall
+            done
+        fi
+        #
+        # UDP Ping Clients
+        #
+        udpClient=1
+        while var_exists name=${node}_udpecho_client${udpClient} ; do
+            udpClientNameVar=${node}_udpecho_client${udpClient}
+            udpClientDestVar=${node}_udpecho_client${udpClient}_dest
+            udpClientStartVar=${node}_udpecho_client${udpClient}_startport
+            udpClientCountVar=${node}_udpecho_client${udpClient}_count
+            echo "#" >> $extrasinstall
+            echo "# UDP Echo Servers" >> $extrasinstall
+            udpClientEnd=`expr ${!udpClientStartVar} + ${!udpClientCountVar} - 1`
+            for (( i=${!udpClientStartVar}; i<=${udpClientEnd}; i++)) ; do
+                udpclient=config_${node}/root/extras/udpping_${!udpClientNameVar}_${i}.sh
+                get_if_v6addr ${!udpClientDestVar}
+                echo "/usr/local/bin/udpping.py ${ipv6Addr} ${i}" >> $udpclient
+            done
+            if [ $udpClient == 1 ] ; then
+                # Only need to do this once for all UDP clients - do it for first one
+                echo "chmod 755 /root/extras/udpping*" >> $extrasinstall
+                echo "mv /root/extras/udpping* /root/" >> $extrasinstall
+                echo "chown root:root /root/udpping*" >> $extrasinstall
+            fi
+            udpClient=`expr $udpClient + 1`            
+        done
+        #
         if $nodeExtern ; then
             echo "   ${node}: Creating config_${node} directory with configuration for node"
             install -D -m644 $iffile config_${node}/etc/network/interfaces
@@ -629,8 +671,6 @@ for node in ${global_nodes}; do
         rm $extrasinstall
     fi
     virsh start $node 2> /dev/null
-
-    break
 done
 
 # Process external interface

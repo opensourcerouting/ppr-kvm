@@ -1,0 +1,32 @@
+# udp6-echo@.service
+#
+# This file is systemd template for socat UDP IPv6 echo server
+#
+#
+# Copy it to /lib/systemd/system/
+#      cp udp6-echo\@.service /lib/systemd/system/
+#
+# Enable to start on boot (example for DUT42): 
+#      systemctl enable udp6-echo@10001.service
+#
+# Start immediatly:
+#      systemctl start udp6-echo@10001.service
+#
+# Stop immediatly:
+#      systemctl stop udp6-echo@10001.service
+#
+# Status:
+#      systemctl status udp6-echo@10001.service
+#
+
+[Unit]
+Description=UDP IPv6 Echo server for port %I
+After=network.target
+
+[Service]
+Type=simple
+KillMode=process
+ExecStart=/usr/bin/socat -6 UDP-LISTEN:%i,fork PIPE
+
+[Install]
+WantedBy=multi-user.target
