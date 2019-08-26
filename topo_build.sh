@@ -524,10 +524,21 @@ for node in ${global_nodes}; do
             echo "rm -rf /etc/frr" >> $frrsetup
         else
             # Run FRR on this node
+            #
+            # Load sysrepo first if we need FRR
+            sysrepo_enable_var=${node}_service_sysrepod
+            if [ "${!sysrepo_enable_var}" = "true" ]; then
+                install -D -m644 ${Script_Dir}/extras/sysrepod.service config_${node}/root/extras/
+                echo "cp /root/extras/sysrepod.service /lib/systemd/system/" >> $frrsetup
+                echo "/usr/bin/systemctl enable sysrepod.service" >> $frrsetup
+                echo "/usr/bin/systemctl start sysrepod.service" >> $frrsetup
+            fi
+            #
+            # Install and start FRR
             install -D -m644 ${Script_Dir}/cache/${FRRpackage} config_${node}/root/extras/${FRRpackage}
             install -D -m644 ${Script_Dir}/cache/${FRRsysrepo} config_${node}/root/extras/${FRRsysrepo}
             echo "while [ \"\`which vtysh\`\" = \"\" ] ; do" >> $frrsetup
-            echo "  yes \"\" | DEBIAN_FRONTEND=noninteractive dpkg -i /root/extras/${FRRpackage}" >> $frrsetup
+            echo "  yes \"\" | DEBIAN_FRONTEND=noninteractive dpkg -i /root/extras/${FRRpackage} /root/extras/${FRRsysrepo}" >> $frrsetup
             echo "  if [ \"\`which vtysh\`\" == \"\" ] ; then sleep 5; fi" >> $frrsetup
             echo "done" >> $frrsetup
             echo "chown frr:frr /etc/frr" >> $frrsetup
@@ -535,20 +546,14 @@ for node in ${global_nodes}; do
             echo "chown frr:frr /etc/frr/daemons" >> $frrsetup
             echo "chown frr:frr /etc/frr/vtysh.conf" >> $frrsetup
             echo "rm -f /root/extras/${FRRpackage}" >> $frrsetup
-            echo "while [ ! -f '/usr/lib/x86_64-linux-gnu/frr/modules/sysrepo.so' ] ; do" >> $frrsetup
-            echo "  yes \"\" | DEBIAN_FRONTEND=noninteractive dpkg -i /root/extras/${FRRsysrepo}" >> $frrsetup
-            echo "  if [ ! -f '/usr/lib/x86_64-linux-gnu/frr/modules/sysrepo.so' ] ; then sleep 5; fi" >> $frrsetup
-            echo "done" >> $frrsetup
             echo "rm -f /root/extras/${FRRsysrepo}" >> $frrsetup
+            #
+            # Now configure sysrepo yang model and add netopeer2
             sysrepo_enable_var=${node}_service_sysrepod
             if [ "${!sysrepo_enable_var}" = "true" ]; then
                 echo "sysrepoctl --install --yang /usr/share/yang/frr-interface.yang" >> $frrsetup
                 echo "sysrepoctl --install --yang /usr/share/yang/frr-isisd.yang" >> $frrsetup
                 echo "sysrepoctl --install --yang /usr/share/yang/frr-ppr.yang" >> $frrsetup
-                install -D -m644 ${Script_Dir}/extras/sysrepod.service config_${node}/root/extras/
-                echo "cp /root/extras/sysrepod.service /lib/systemd/system/" >> $frrsetup
-                echo "/usr/bin/systemctl enable sysrepod.service" >> $frrsetup
-                echo "/usr/bin/systemctl start sysrepod.service" >> $frrsetup
                 netopeer2server_enable_var=${node}_service_netopeer2server
                 if [ "${!netopeer2server_enable_var}" = "true" ]; then
                     install -D -m644 ${Script_Dir}/extras/netopeer2-server.service config_${node}/root/extras/
