@@ -3,8 +3,8 @@
 #
 
 global:
-  # nodes: "Rs Ra Rb Rc Rd R1 R2 R3 R4 R5 R6 R7 CE1 CE2 Controller H1 H2"
-  nodes: "Rs"
+  nodes: "Rs Ra Rb Rc Rd R1 R2 R3 R4 R5 R6 R7 CE1 CE2 Controller H1 H2"
+  phyif: "ext_ce1_201 ext_ce1_100 ext_r1_102 ext_r3_103 ext_r1_107 ext_r4_113 ext_r5_118 ext_r5_116 ext_rd_122"
 
   # If redistributeHostRoutes is set to true, then the host routes
   #   are redistributed into ISIS and any traffic not matching a PPR
@@ -25,17 +25,18 @@ Controller:
     frr: false
 
 H1:
+  external: true
   if1:
     phy: lo
   if2:
-    phy: ens2
-    bridge: virbr1
+    phy: enx94103eb810b3
+    bridge: none
     ipv4: 192.168.124.201/24
     ipv4gw: 192.168.124.1
     frr: false
   if3:
-    phy: ens3
-    bridge: br201
+    phy: enp3s0
+    bridge: none
     ipv6: fc00:201::11/64
   ipv6static1:
     net: ::/0
@@ -129,32 +130,33 @@ CE2:
     distance: 100
 
 Rs:
+  external: true
   if1:
     phy: lo
     ipv6: fc00::ff/128
     isis:
       ipv6: pprlab
   if2:
-    phy: ens2
-    bridge: virbr1
+    phy: enp8s0f1
+    bridge: none
     ipv4: 192.168.124.100/24
     ipv4gw: 192.168.124.1
     frr: false
   if3:
     vrf: vrf-RED
-    phy: ens3
-    bridge: br100
+    phy: enp6s0f0
+    bridge: none
     ipv6: fc00:100::ff/64
   if4:
-    phy: ens4
-    bridge: br102
+    phy: enp3s0
+    bridge: none
     ipv6: fc00:102::ff/64
     isis:
       ipv6: pprlab
       network: point-to-point
   if5:
-    phy: ens5
-    bridge: br103
+    phy: enp4s0
+    bridge: none
     ipv6: fc00:103::ff/64
     isis:
       ipv6: pprlab
@@ -315,48 +317,49 @@ R1:
     area: 49.1111.0000.0001.00
 
 R2:
+  external: true
   if1:
     phy: lo
     ipv6: fc00::2/128
     isis:
       ipv6: pprlab
   if2:
-    phy: ens2
-    bridge: virbr1
+    phy: enp8s0f1
+    bridge: none
     ipv4: 192.168.124.112/24
     ipv4gw: 192.168.124.1
     frr: false
   if3:
-    phy: ens3
-    bridge: br113
+    phy: enp3s0
+    bridge: none
     ipv6: fc00:113::2/64
     isis:
       ipv6: pprlab
       network: point-to-point
   if4:
-    phy: ens4
-    bridge: br116
+    phy: enp8s0f0
+    bridge: none
     ipv6: fc00:116::2/64
     isis:
       ipv6: pprlab
       network: point-to-point
   if5:
-    phy: ens5
-    bridge: br118
+    phy: enp6s0f1
+    bridge: none
     ipv6: fc00:118::7/64
     isis:
       ipv6: pprlab
       network: point-to-point
   if6:
-    phy: ens10
-    bridge: br122
+    phy: enp4s0
+    bridge: none
     ipv6: fc00:122::2/64
     isis:
       ipv6: pprlab
       network: point-to-point
   if7:
-    phy: ens11
-    bridge: br107
+    phy: enp6s0f0
+    bridge: none
     ipv6: fc00:107::2/64
     isis:
       ipv6: pprlab
@@ -718,3 +721,39 @@ Rc:
     name: pprlab
     type: level-1
     area: 49.1111.0000.1003.00
+
+ext_ce1_201:
+  bridge: br201
+  phy: ens2f1
+
+ext_ce1_100:
+  bridge: br100
+  phy: enp3s0f1
+
+ext_r1_102:
+  bridge: br102
+  phy: enp3s0f3
+
+ext_r3_103:
+  bridge: br103
+  phy: enp3s0f2
+
+ext_r1_107:
+  bridge: br107
+  phy: ens2f3
+
+ext_r4_113:
+  bridge: br113
+  phy: enp16s0
+
+ext_r5_118:
+  bridge: br118
+  phy: ens2f2
+
+ext_r5_116:
+  bridge: br116
+  phy: ens2f1
+
+ext_rd_122:
+  bridge: br122
+  phy: enp17s0
