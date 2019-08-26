@@ -445,42 +445,43 @@ for node in ${global_nodes}; do
             done
         fi
         echo "!" >> $frrconf
-        # Now Add PPR config
-        tunnelSetNum=1
-        echo "ppr group PPRLAB" >> $frrconf
-        while var_exists name=${node}_tunnelset${tunnelSetNum}_count ; do
-            line=${node}_tunnelset${tunnelSetNum}
-            numTunnelsVar=${node}_tunnelset${tunnelSetNum}_count
-            startTunVar=${node}_tunnelset${tunnelSetNum}_start
-            tunModeVar=${node}_tunnelset${tunnelSetNum}_mode
-            tunSideVar=${node}_tunnelset${tunnelSetNum}_thisSide
-            tunNetVar=${node}_tunnelset${tunnelSetNum}_netPrefix
-            if [ "${!tunSideVar}" = "Dest" ] ; then
-                tunThisSideVar=${node}_tunnelset${tunnelSetNum}_dstPrefix
-                tunOtherSideVar=${node}_tunnelset${tunnelSetNum}_srcPrefix
-            else
-                tunThisSideVar=${node}_tunnelset${tunnelSetNum}_srcPrefix
-                tunOtherSideVar=${node}_tunnelset${tunnelSetNum}_dstPrefix
-            fi                    
-            for((i=1; i<=${!numTunnelsVar}; i++)) ; do
-                dec=`expr ${!startTunVar} + $i`
-                hex=$(printf '%x' $dec)
-                echo " ppr ipv6 ${!tunThisSideVar}::${hex}/128 prefix ${!tunOtherSideVar}::${hex}/128" >> $frrconf
-                pprVar=${node}_ppr${i}
-                for step in ${!pprVar}; do
-                    if [[ $step =~ "_" ]] ; then
-                        get_if_v6addr ${step}
-                        echo "  pde ipv6-interface ${ipv6Addr}"  >> $frrconf
-                    else
-                        get_lo_v6addr ${step}
-                        echo "  pde ipv6-node ${ipv6Loopback}"  >> $frrconf
-                    fi
+        #
+        # Add PPR Paths
+        pprsetcnt=1
+        while var_exists name=${node}_pprset${pprsetcnt}_group ; do
+            pprGroupVar=${node}_pprset${pprsetcnt}_group
+            pprIDbaseVar=${node}_pprset${pprsetcnt}_id
+            pprPrefixBaseVar=${node}_pprset${pprsetcnt}_id_prefix
+            pprIDstartVar=${node}_pprset${pprsetcnt}_id_start
+            pprRepeatVar=${node}_pprset${pprsetcnt}_repeat
+            nextPPR=$(printf '%d' "0x${!pprIDstartVar}")
+            pprRepeat=${!pprRepeatVar}
+            echo "ppr group ${!pprGroupVar}" >> $frrconf
+            while [ $pprRepeat -gt 0 ] ; do
+                pprcnt=1
+                while var_exists name=${node}_pprset${pprsetcnt}_ppr${pprcnt} ; do
+                    nextPPRhex=$(printf '%x' $nextPPR)
+                    echo " ppr ipv6 ${!pprIDbaseVar}${nextPPRhex}/128 prefix ${!pprPrefixBaseVar}${nextPPRhex}/128" >> $frrconf
+                    pprVar=${node}_pprset${pprsetcnt}_ppr${pprcnt}
+                    for step in ${!pprVar}; do
+                        if [[ $step =~ "_" ]] ; then
+                            get_if_v6addr ${step}
+                            echo "  pde ipv6-interface ${ipv6Addr}"  >> $frrconf
+                        else
+                            get_lo_v6addr ${step}
+                            echo "  pde ipv6-node ${ipv6Loopback}"  >> $frrconf
+                        fi
+                    done
+                    echo "  exit" >> $frrconf
+                    nextPPR=`expr $nextPPR + 1`
+                    pprcnt=`expr $pprcnt + 1`
                 done
-                echo "  exit" >> $frrconf
+                pprRepeat=`expr $pprRepeat - 1`
             done
-            tunnelSetNum=`expr $tunnelSetNum + 1`            
+            pprsetcnt=`expr $pprsetcnt + 1`
         done
         echo "!" >> $frrconf
+        #
         # Now Add Router ISIS config
         isisNameVar=${node}_isis_name
         isisTypeVar=${node}_isis_type
@@ -498,7 +499,12 @@ for node in ${global_nodes}; do
             fi
             echo " topology ipv6-unicast" >> $frrconf
             echo " ppr on" >> $frrconf
-            echo " ppr advertise PPRLAB" >> $frrconf
+            pprsetcnt=1
+            while var_exists name=${node}_pprset${pprsetcnt}_group ; do
+                pprGroupVar=${node}_pprset${pprsetcnt}_group
+                echo " ppr advertise ${!pprGroupVar}" >> $frrconf
+                pprsetcnt=`expr $pprsetcnt + 1`
+            done
             echo "!" >> $frrconf
         fi
         # Finish config
@@ -773,7 +779,6 @@ for node in ${global_nodes}; do
         rm $extrasinstall
     fi
     virsh start $node 2> /dev/null
-
 done
 
 # Process external interface

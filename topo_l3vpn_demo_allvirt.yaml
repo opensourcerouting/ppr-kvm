@@ -166,9 +166,15 @@ Rs:
     srcPrefix: fc00:1000
     dstPrefix: fc00:2000
     netPrefix: fc00:ffff
-  ppr1: "Rd R5 R7_if4 R4 R3 Rs_if5"
-  ppr2: "Rd R2 R4 R6 R3 Rs"
-  ppr3: "Rd R5 R2 R1_if6 Rs"
+  pprset1:
+    group: PPRLAB
+    id: fc00:1000::
+      start: 1
+      prefix: fc00:2000::
+    ppr1: "Rd R5 R7_if4 R4 R3 Rs_if5"
+    ppr2: "Rd R2 R4 R6 R3 Rs"
+    ppr3: "Rd R5 R2 R1_if6 Rs"
+    repeat: 1
   isis:
     name: pprlab
     type: level-1
@@ -232,9 +238,15 @@ Rd:
     srcPrefix: fc00:1000
     dstPrefix: fc00:2000
     netPrefix: fc00:ffff
-  ppr1: "Rs R3 R4 R7 R5_if6 Rd"
-  ppr2: "Rs R3 R6 R4 R2 Rd"
-  ppr3: "Rs R1_if3 R2 R5 Rd"
+  pprset1:
+    group: PPRLAB
+    id: fc00:2000::
+      start: 1
+      prefix: fc00:1000::
+    ppr1: "Rs R3 R4 R7 R5_if6 Rd"
+    ppr2: "Rs R3 R6 R4 R2 Rd"
+    ppr3: "Rs R1_if3 R2 R5 Rd"
+    repeat: 1
   isis:
     name: pprlab
     type: level-1
