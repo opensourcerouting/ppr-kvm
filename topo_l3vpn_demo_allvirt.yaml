@@ -3,7 +3,7 @@
 #
 
 global:
-  nodes: "Controller R1 R2 R3 R4 R5 R6 R7 Ra Rb Rc Rs Rd CE1 CE2 H1 H3"
+  nodes: "Rs Ra Rb Rc Rd R1 R2 R3 R4 R5 R6 R7 CE1 CE2 Controller H1 H3"
 
   # If redistributeHostRoutes is set to true, then the host routes
   #   are redistributed into ISIS and any traffic not matching a PPR
