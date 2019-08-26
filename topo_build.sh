@@ -636,7 +636,7 @@ for node in ${global_nodes}; do
             udpClientStartVar=${node}_udpecho_client${udpClient}_startport
             udpClientCountVar=${node}_udpecho_client${udpClient}_count
             echo "#" >> $extrasinstall
-            echo "# UDP Echo Servers" >> $extrasinstall
+            echo "# UDP Echo Clients" >> $extrasinstall
             udpClientEnd=`expr ${!udpClientStartVar} + ${!udpClientCountVar} - 1`
             for (( i=${!udpClientStartVar}; i<=${udpClientEnd}; i++)) ; do
                 udpclient=config_${node}/root/extras/udpping_${!udpClientNameVar}_${i}.sh
@@ -645,10 +645,13 @@ for node in ${global_nodes}; do
                 echo "/usr/local/bin/udpping.py ${ipv6Addr} ${i}" >> $udpclient
             done
             if [ $udpClient == 1 ] ; then
+                install -D -m755 ${Script_Dir}/extras/udpping.py config_${node}/root/extras/
                 # Only need to do this once for all UDP clients - do it for first one
-                echo "chmod 755 /root/extras/udpping*" >> $extrasinstall
+                echo "mv /root/extras/udpping.py /usr/local/bin/" > $extrasinstall
+                echo "chmod 755 /usr/local/bin/udpping*" >> $extrasinstall
                 echo "mv /root/extras/udpping* /home/ppr-lab/" >> $extrasinstall
                 echo "chown ppr-lab:ppr-lab /home/ppr-lab/udpping*" >> $extrasinstall
+                echo "chmod 755 /home/ppr-lab/udpping*" >> $extrasinstall
             fi
             udpClient=`expr $udpClient + 1`            
         done
