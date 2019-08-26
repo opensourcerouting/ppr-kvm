@@ -18,6 +18,7 @@
 [Unit]
 Description=Sysrepo Daemon Service
 After=network.target
+Before=frr.service
 Before=netopeer2-server.service
 # 
 [Service]
