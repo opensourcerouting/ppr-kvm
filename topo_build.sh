@@ -659,7 +659,6 @@ for node in ${global_nodes}; do
             #
             videoServerNum=1
             while var_exists name=${node}_video_server_movie${videoServerNum} ; do
-                echo "Video Server ${videoServerNum}"
                 movieVar=${node}_video_server_movie${videoServerNum}
                 movieDestVar=${node}_video_server_movie${videoServerNum}_dest
                 moviePortVar=${node}_video_server_movie${videoServerNum}_port
@@ -672,7 +671,7 @@ for node in ${global_nodes}; do
                 echo "# Movie: ${!movieVar}" >> $movieServer
                 echo "# Send to ${!movieDestVar} at ${ipv6Addr}, Port ${!moviePortVar}" >> $movieServer
                 echo "#" >> $movieServer
-                echo "cvlc -A alsa,none ~ppr-lab/movies/${!movieDestVar} --noaudio --loop --sout udp://[${ipv6Addr}]:${!moviePortVar}" >> $movieServer
+                echo "cvlc -A alsa,none /home/ppr-lab/movies/${!movieDestVar} --noaudio --loop --sout udp://[${ipv6Addr}]:${!moviePortVar}" >> $movieServer
                 movieServer=config_${node}/root/extras/movie_${!movieDestVar}_port${!moviePortVar}.service
                 echo "[Unit]" > $movieServer
                 echo "Description=Movie to ${!movieDestVar} at ${ipv6Addr} Port ${!moviePortVar}" >> $movieServer
