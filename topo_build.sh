@@ -636,8 +636,8 @@ for node in ${global_nodes}; do
             if [ $udpClient == 1 ] ; then
                 # Only need to do this once for all UDP clients - do it for first one
                 echo "chmod 755 /root/extras/udpping*" >> $extrasinstall
-                echo "mv /root/extras/udpping* /root/" >> $extrasinstall
-                echo "chown root:root /root/udpping*" >> $extrasinstall
+                echo "mv /root/extras/udpping* /home/ppr-lab/" >> $extrasinstall
+                echo "chown ppr-lab:ppr-lab /home/ppr-lab/udpping*" >> $extrasinstall
             fi
             udpClient=`expr $udpClient + 1`            
         done
