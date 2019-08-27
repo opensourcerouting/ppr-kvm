@@ -342,7 +342,7 @@ R2:
   if5:
     phy: ens5
     bridge: br118
-    ipv6: fc00:118::7/64
+    ipv6: fc00:118::2/64
     isis:
       ipv6: pprlab
       network: point-to-point

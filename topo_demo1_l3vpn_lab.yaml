@@ -137,7 +137,7 @@ Rs:
     isis:
       ipv6: pprlab
   if2:
-    phy: enp8s0f1
+    phy: enp7s0f1
     bridge: none
     ipv4: 192.168.124.100/24
     ipv4gw: 192.168.124.1
@@ -324,7 +324,7 @@ R2:
     isis:
       ipv6: pprlab
   if2:
-    phy: enp8s0f1
+    phy: enp7s0f1
     bridge: none
     ipv4: 192.168.124.112/24
     ipv4gw: 192.168.124.1
@@ -337,7 +337,7 @@ R2:
       ipv6: pprlab
       network: point-to-point
   if4:
-    phy: enp8s0f0
+    phy: enp7s0f0
     bridge: none
     ipv6: fc00:116::2/64
     isis:
@@ -346,7 +346,7 @@ R2:
   if5:
     phy: enp6s0f1
     bridge: none
-    ipv6: fc00:118::7/64
+    ipv6: fc00:118::2/64
     isis:
       ipv6: pprlab
       network: point-to-point
@@ -724,7 +724,7 @@ Rc:
 
 ext_ce1_201:
   bridge: br201
-  phy: ens2f1
+  phy: enp3s0f0
 
 ext_ce1_100:
   bridge: br100

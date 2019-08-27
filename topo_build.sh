@@ -751,7 +751,7 @@ for node in ${global_nodes}; do
             install -D -m755 ${Script_Dir}/rc.local config_${node}/etc/rc.local
             install -D -m755 $frrsetup config_${node}/etc/runonce.d/80_frr_install.sh
             install -D -m755 $tunnelcfgfile config_${node}/etc/runboot.d/20_make_tunnels.sh
-            install -D -m755 $extrasinstall extrasinstall/10_extra_install.sh
+            install -D -m755 $extrasinstall config_${node}/etc/runonce.d/10_extra_install.sh
         else
             # Files prepared, now add them to new VM disks
             echo "   ${node}: Updating VM disk with configuration"
