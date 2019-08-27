@@ -463,7 +463,8 @@ for node in ${global_nodes}; do
                 pprcnt=1
                 while var_exists name=${node}_pprset${pprsetcnt}_ppr${pprcnt} ; do
                     nextPPRhex=$(printf '%x' $nextPPR)
-                    echo " ppr ipv6 ${!pprIDbaseVar}${nextPPRhex}/128 prefix ${!pprPrefixBaseVar}${nextPPRhex}/128" >> $frrconf
+                    get_lo_v6addr ${node}
+                    echo " ppr-id ipv6 ${!pprIDbaseVar}${nextPPRhex}/128 prefix ${ipv6Loopback}" >> $frrconf
                     pprVar=${node}_pprset${pprsetcnt}_ppr${pprcnt}
                     for step in ${!pprVar}; do
                         if [[ $step =~ "_" ]] ; then
@@ -684,6 +685,7 @@ for node in ${global_nodes}; do
                 movieDestVar=${node}_video_server_movie${videoServerNum}_dest
                 moviePortVar=${node}_video_server_movie${videoServerNum}_port
                 install -D -m644 ${Script_Dir}/cache/${!movieVar} config_${node}/root/extras/
+                movieServer=config_${node}/root/extras/movie_to_port${!moviePortVar}.sh
                 get_if_v6addr ${!movieDestVar}
                 ipv6Addr=`echo $ipv6Addr | cut -f1 -d"/"`
                 echo "# Stream Movie ${videoServerNum}" > $movieServer
