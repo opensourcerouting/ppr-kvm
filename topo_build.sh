@@ -695,7 +695,7 @@ for node in ${global_nodes}; do
                 echo "Type=exec" >> $movieServer
                 echo "KillMode=process" >> $movieServer
                 echo "User=ppr-lab" >> $movieServer
-                echo "ExecStart=/usr/bin/cvlc -A alsa,none ~ppr-lab/movies/${!movieVar} --noaudio --loop --sout udp://[${ipv6Addr}]:${!moviePortVar}" >> $movieServer
+                echo "ExecStart=/usr/bin/cvlc -A alsa,none /home/ppr-lab/movies/${!movieVar} --noaudio --loop --sout udp://[${ipv6Addr}]:${!moviePortVar}" >> $movieServer
                 echo "#" >> $movieServer
                 echo "[Install]" >> $movieServer
                 echo "WantedBy=multi-user.target" >> $movieServer
@@ -724,7 +724,7 @@ for node in ${global_nodes}; do
             while var_exists name=${node}_video_clientport${videoClientNum} ; do
                 moviePortVar=${node}_video_clientport${videoClientNum}
                 movieClient=config_${node}/root/extras/vlc_play_port${!moviePortVar}.sh
-                echo "vlc udp://@:${!moviePortVar}" > $movieClient
+                echo "cvlc udp://@[::]:${!moviePortVar}" > $movieClient
                 if [ $videoClientNum == 1 ] ; then
                     # Only need this once for all movies
                     echo "# Video Client Scripts" >> $extrasinstall
