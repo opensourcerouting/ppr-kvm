@@ -138,6 +138,8 @@ for node in ${global_nodes}; do
     #
     # Check for external node
     nodeExtern=false
+    VRFused=0
+
     if var_exists name=${node}_external ; then
         ext_name=${node}_external
         nodeExtern=${!extVar}
@@ -575,6 +577,7 @@ for node in ${global_nodes}; do
             vrfVar=${node}_if${ifnum}_vrf
             if var_exists name=${vrfVar} ; then
                 ifVRF=${!vrfVar}
+                VRFused=1
                 break
             fi
             ifnum=`expr $ifnum + 1`
@@ -609,6 +612,10 @@ for node in ${global_nodes}; do
         # /etc/runonce.d/10_extra_install.sh
         extrasinstall=/tmp/node-extrasinstall-$$
         echo "#!/usr/bin/env bash" > $extrasinstall
+        #
+        # /etc/runboot.d/10_extra_run.sh
+        extrasrun=/tmp/node-extrasrun-$$
+        echo "#!/usr/bin/env bash" > $extrasrun
         #
         # UDP Ping Servers
         #
@@ -677,7 +684,6 @@ for node in ${global_nodes}; do
                 movieDestVar=${node}_video_server_movie${videoServerNum}_dest
                 moviePortVar=${node}_video_server_movie${videoServerNum}_port
                 install -D -m644 ${Script_Dir}/cache/${!movieVar} config_${node}/root/extras/
-                movieServer=config_${node}/root/extras/movie_to_port${!moviePortVar}.sh
                 get_if_v6addr ${!movieDestVar}
                 ipv6Addr=`echo $ipv6Addr | cut -f1 -d"/"`
                 echo "# Stream Movie ${videoServerNum}" > $movieServer
@@ -737,6 +743,12 @@ for node in ${global_nodes}; do
             done
         fi
         #
+        if [ $VRFused -gt 0 ] ; then
+            echo "#"  >> $extrasrun
+            echo "## Hack to re-apply the FRR config at end of boottime as it is skipped" >> $extrasrun
+            echo "# when FRR starts (too early just after interface raised)" >> $extrasrun
+            echo "/usr/bin/vtysh -f /etc/frr/frr.conf | true" >> $extrasrun
+        fi
         #
         if $nodeExtern ; then
             echo "   ${node}: Creating config_${node} directory with configuration for node"
@@ -752,6 +764,7 @@ for node in ${global_nodes}; do
             install -D -m755 $frrsetup config_${node}/etc/runonce.d/80_frr_install.sh
             install -D -m755 $tunnelcfgfile config_${node}/etc/runboot.d/20_make_tunnels.sh
             install -D -m755 $extrasinstall config_${node}/etc/runonce.d/10_extra_install.sh
+            install -D -m755 $extrasrun config_${node}/etc/runboot.d/10_extra_run.sh
         else
             # Files prepared, now add them to new VM disks
             echo "   ${node}: Updating VM disk with configuration"
@@ -771,7 +784,8 @@ for node in ${global_nodes}; do
                 upload $tunnelcfgfile /etc/runboot.d/20_make_tunnels.sh : \
                 mkdir /root/extras : \
                 copy-in config_${node}/root/extras /root/ : \
-                upload $extrasinstall /etc/runonce.d/10_extra_install.sh
+                upload $extrasinstall /etc/runonce.d/10_extra_install.sh : \
+                upload $extrasrun /etc/runonce.d/10_extra_run.sh
             #
             # Delete config dir for VM nodes - no need to keep it around
             rm -rf config_${node}
