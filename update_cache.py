@@ -7,13 +7,13 @@ from pathlib import Path
 import hashlib
 
 CacheFiles = [
-	["frr_7.2-dev-20190720-00-ga89793d6e-0_amd64.deb", 
-	 "https://files.netdef.org/ppr/frr_7.2-dev-20190720-00-ga89793d6e-0_amd64.deb", 
-	 "c344812db7eb608f935a8adf5e3c81efea617c477c714c2005b563862d234ba8"
+	["frr_7.2-dev-20190827-00-gf1cc58e74-0_amd64.deb", 
+	 "https://files.netdef.org/ppr/frr_7.2-dev-20190827-00-gf1cc58e74-0_amd64.deb", 
+	 "a064433785bcddbb1c49a3fd687505aba20ba12a460c36829f972503b3555eb0"
 	],
-	["frr-sysrepo_7.2-dev-20190720-00-ga89793d6e-0_amd64.deb", 
-	"https://files.netdef.org/ppr/frr-sysrepo_7.2-dev-20190720-00-ga89793d6e-0_amd64.deb",
-	"21cfea5fd932ee5e7cd4f1e94c208fb431d6bae38f453c797c27868767f5f9f7"
+	["frr-sysrepo_7.2-dev-20190827-00-gf1cc58e74-0_amd64.deb", 
+	"https://files.netdef.org/ppr/frr-sysrepo_7.2-dev-20190827-00-gf1cc58e74-0_amd64.deb",
+	"529ddb351344503659b587d5b18cce53d63774a0221fc7fd7fcb8ab40dfefa57"
 	],
 	["bbb_sunflower_1080p_30fps_normal.mp4",
 	"https://files.netdef.org/ppr/bbb_sunflower_1080p_30fps_normal.mp4",

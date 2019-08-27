@@ -12,8 +12,8 @@ MacPrefix="00:1C:44:"
 # Linux config files
 SysCtlFile="node-sysctl.conf"
 # FRR
-FRRpackage="frr_7.2-dev-20190720-00-ga89793d6e-0_amd64.deb"
-FRRsysrepo="frr-sysrepo_7.2-dev-20190720-00-ga89793d6e-0_amd64.deb"
+FRRpackage="frr_7.2-dev-20190827-00-gf1cc58e74-0_amd64.deb"
+FRRsysrepo="frr-sysrepo_7.2-dev-20190827-00-gf1cc58e74-0_amd64.deb"
 FRRdaemons="daemons"
 #
 #########################################
