@@ -787,7 +787,7 @@ for node in ${global_nodes}; do
                 mkdir /root/extras : \
                 copy-in config_${node}/root/extras /root/ : \
                 upload $extrasinstall /etc/runonce.d/10_extra_install.sh : \
-                upload $extrasrun /etc/runonce.d/10_extra_run.sh
+                upload $extrasrun /etc/runboot.d/10_extra_run.sh
             #
             # Delete config dir for VM nodes - no need to keep it around
             rm -rf config_${node}
