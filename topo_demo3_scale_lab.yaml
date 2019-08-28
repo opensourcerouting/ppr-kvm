@@ -221,7 +221,7 @@ CE3:
     ipv6: fc00:203::ce3/64
   ipv6static1:
     net: ::/0
-    dest: fc00:122::a
+    dest: fc00:124::a
     distance: 100
 
 CE4:
@@ -243,7 +243,7 @@ CE4:
     ipv6: fc00:204::ce4/64
   ipv6static1:
     net: ::/0
-    dest: fc00:123::b
+    dest: fc00:125::b
     distance: 100
 
 CE5:
@@ -265,7 +265,7 @@ CE5:
     ipv6: fc00:205::ce5/64
   ipv6static1:
     net: ::/0
-    dest: fc00:124::c
+    dest: fc00:126::c
     distance: 100
 
 Rs:
@@ -524,7 +524,7 @@ Ra:
       rd: 1:1
   ipv6static1:
     net: fc00:203::/48
-    dest: fc00:122::ce3
+    dest: fc00:124::ce3
     distance: 100
     vrf: vrf-RED
   #service:
@@ -600,7 +600,7 @@ Rb:
       rd: 1:1
   ipv6static1:
     net: fc00:204::/48
-    dest: fc00:123::ce4
+    dest: fc00:125::ce4
     distance: 100
     vrf: vrf-RED
   #service:
@@ -683,7 +683,7 @@ Rc:
       rd: 1:1
   ipv6static1:
     net: fc00:205::/48
-    dest: fc00:124::ce5
+    dest: fc00:126::ce5
     distance: 100
     vrf: vrf-RED
   #service:
