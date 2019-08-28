@@ -210,8 +210,8 @@ CE3:
     frr: false
   if3:
     phy: ens3
-    bridge: br122
-    ipv6: fc00:122::ce3/64
+    bridge: br124
+    ipv6: fc00:124::ce3/64
   if4:
     phy: ens4
     bridge: br203
@@ -232,8 +232,8 @@ CE4:
     frr: false
   if3:
     phy: ens3
-    bridge: br123
-    ipv6: fc00:123::ce4/64
+    bridge: br125
+    ipv6: fc00:125::ce4/64
   if4:
     phy: ens4
     bridge: br204
@@ -254,8 +254,8 @@ CE5:
     frr: false
   if3:
     phy: ens3
-    bridge: br124
-    ipv6: fc00:124::ce5/64
+    bridge: br126
+    ipv6: fc00:126::ce5/64
   if4:
     phy: ens4
     bridge: br205
@@ -473,8 +473,8 @@ Ra:
   if5:
     vrf: vrf-RED
     phy: ens5
-    bridge: br122
-    ipv6: fc00:122::a/64
+    bridge: br124
+    ipv6: fc00:124::a/64
   tunnelset1:
     # Set Ra-Rc
     mode: ip6gre
@@ -549,8 +549,8 @@ Rb:
   if4:
     vrf: vrf-RED
     phy: ens4
-    bridge: br123
-    ipv6: fc00:123::b/64
+    bridge: br125
+    ipv6: fc00:125::b/64
   tunnelset1:
     # Set Rb-Rd
     mode: ip6gre
@@ -632,8 +632,8 @@ Rc:
   if5:
     vrf: vrf-RED
     phy: ens5
-    bridge: br124
-    ipv6: fc00:124::c/64
+    bridge: br126
+    ipv6: fc00:126::c/64
   tunnelset1:
     # Set Ra-Rc
     mode: ip6gre
