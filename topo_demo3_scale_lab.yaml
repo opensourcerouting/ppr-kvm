@@ -29,13 +29,13 @@ H1:
   if1:
     phy: lo
   if2:
-    phy: enx000ec6f059ca
+    phy: enx70886b87e708
     bridge: none
     ipv4: 192.168.124.201/24
     ipv4gw: 192.168.124.1
     frr: false
   if3:
-    phy: enp3s0
+    phy: enp2s0
     bridge: none
     ipv6: fc00:201::11/64
   ipv6static1:
@@ -370,7 +370,7 @@ Rd:
     bridge: none
     ipv6: fc00:101::d/64
   if4:
-    phy: en06s0f1
+    phy: enp6s0f1
     bridge: none
     ipv6: fc00:122::d/64
     isis:
@@ -1083,8 +1083,8 @@ ext_R2_122:
   bridge: br122
   phy: ens2f2
 
-ext_R5_117:
-  bridge: br117
+ext_R5_121:
+  bridge: br121
   phy: ens2f3
 
 ext_ce2_101:
